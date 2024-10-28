@@ -1,4 +1,3 @@
-chmod +x install_rancher.sh
 #!/bin/bash
 
 # Add the Rancher and Jetstack Helm repositories

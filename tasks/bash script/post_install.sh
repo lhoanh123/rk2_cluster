@@ -1,6 +1,3 @@
-chmod +x post_install.sh
-./post_install.sh
-
 #!/bin/bash
 
 # Check and install curl if it's not installed
