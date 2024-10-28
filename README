@@ -9,4 +9,4 @@
 
 
 - Run the script:
-    ./ansible.sh
+    sudo ./ansible.sh
