@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Define default IPs (can be overridden by export or direct assignment before running)
+: "${ANSIBLE_HOST_IP:=192.168.198.129}"
 : "${MASTER_IP:=192.168.198.141}"
 : "${WORKER1_IP:=192.168.198.132}"
 : "${WORKER2_IP:=192.168.198.133}"
-ANSIBLE_HOST_IP="192.168.198.129"
 
 # Update and install OpenSSH server
 sudo apt update
@@ -40,7 +40,6 @@ fi
 if ! grep -q "$WORKER2_IP worker2" /etc/hosts; then
     echo "$WORKER2_IP worker2" | sudo tee -a /etc/hosts
 fi
-
 
 # Update Ansible hosts file in the current folder
 cat > hosts <<EOF
