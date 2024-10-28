@@ -44,6 +44,9 @@ if [ -n "$WORKER2_IP" ] && ! grep -q "$WORKER2_IP worker2" /etc/hosts; then
     echo "$WORKER2_IP worker2" | sudo tee -a /etc/hosts
 fi
 
+# Install Ansible Galaxy role for RKE2
+ansible-galaxy install lablabs.rke2
+
 # Update Ansible hosts file in the current folder
 cat > hosts <<EOF
 [masters]
