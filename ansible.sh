@@ -4,7 +4,7 @@
 : "${ANSIBLE_HOST_IP:=192.168.198.129}"
 : "${MASTER_IP:=192.168.198.141}"
 : "${WORKER1_IP:=192.168.198.132}"
-: "${WORKER2_IP:=192.168.198.133}"
+: "${WORKER2_IP:=}"  # Optional, leave blank if there's only one worker
 
 # Update and install OpenSSH server
 sudo apt update
@@ -22,7 +22,9 @@ fi
 # Copy SSH keys to master and worker nodes
 ssh-copy-id "master1@$MASTER_IP"
 ssh-copy-id "master1@$WORKER1_IP"
-ssh-copy-id "master1@$WORKER2_IP"
+if [ -n "$WORKER2_IP" ]; then
+    ssh-copy-id "master1@$WORKER2_IP"
+fi
 
 # Append IPs to /etc/hosts if not already present
 if ! grep -q "$ANSIBLE_HOST_IP ansible" /etc/hosts; then
@@ -37,7 +39,7 @@ if ! grep -q "$WORKER1_IP worker1" /etc/hosts; then
     echo "$WORKER1_IP worker1" | sudo tee -a /etc/hosts
 fi
 
-if ! grep -q "$WORKER2_IP worker2" /etc/hosts; then
+if [ -n "$WORKER2_IP" ] && ! grep -q "$WORKER2_IP worker2" /etc/hosts; then
     echo "$WORKER2_IP worker2" | sudo tee -a /etc/hosts
 fi
 
@@ -48,7 +50,15 @@ master1 ansible_host=$MASTER_IP rke2_type=server
 
 [workers]
 worker1 ansible_host=$WORKER1_IP rke2_type=agent
+EOF
+
+if [ -n "$WORKER2_IP" ]; then
+    cat >> hosts <<EOF
 worker2 ansible_host=$WORKER2_IP rke2_type=agent
+EOF
+fi
+
+cat >> hosts <<EOF
 
 [k8s_cluster:children]
 masters
