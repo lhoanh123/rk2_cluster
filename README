@@ -1,5 +1,5 @@
 - Make it executable:
-    chmod +x setup_ansible_env.sh
+    chmod +x ansible.sh
 - Optionally, override IPs using export:
     export ANSIBLE_HOST_IP=192.168.198.145
     export MASTER_IP=192.168.198.145
