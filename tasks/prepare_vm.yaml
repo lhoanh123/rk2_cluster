@@ -1,0 +1,80 @@
+---
+- name: Prepare VMs for RKE2
+  hosts: all
+  become: yes
+  tasks:
+    - name: Stop and disable UFW
+      systemd:
+        name: ufw
+        state: stopped
+        enabled: no
+
+    - name: Create sysctl configuration file
+      file:
+        path: /etc/sysctl.d/90-rke2.conf
+        state: touch
+
+    - name: Enable IP forwarding for IPv4
+      lineinfile:
+        path: /etc/sysctl.d/90-rke2.conf
+        line: 'net.ipv4.ip_forward=1'
+        state: present
+
+    - name: Enable IP forwarding for IPv6
+      lineinfile:
+        path: /etc/sysctl.d/90-rke2.conf
+        line: 'net.ipv6.conf.all.forwarding=1'
+        state: present
+
+    - name: Apply sysctl settings
+      command: sysctl --system
+      changed_when: false
+
+    - name: Disable swap
+      command: swapoff -a
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Comment out swap in fstab
+      lineinfile:
+        path: /etc/fstab
+        regexp: '^([^#].*swap.*)'
+        line: '# \1'
+        state: present
+
+    - name: Update package lists
+      apt:
+        update_cache: yes
+
+    - name: Install nfs-common
+      apt:
+        name: nfs-common
+        state: present
+
+    - name: Upgrade packages
+      apt:
+        upgrade: dist
+        state: latest
+
+    - name: Autoremove unnecessary packages
+      apt:
+        autoremove: yes
+
+    - name: Update /etc/hosts file with Ansible inventory
+      lineinfile:
+        path: /etc/hosts
+        line: "{{ item }}"
+        state: present
+      loop: "{{ groups['all'] | map('extract', hostvars, ['ansible_host']) | zip(groups['all']) | map('join', ' ') }}"
+      when: ansible_host is defined
+
+    - name: Set hostname based on inventory_hostname
+      hostname:
+        name: "{{ inventory_hostname }}"
+      when: inventory_hostname in groups['masters'] + groups['workers']
+
+    - name: Reboot the server to apply changes
+      reboot:
+        msg: "Rebooting to apply changes"
+        connect_timeout: 5
+      when: inventory_hostname in groups['masters'] + groups['workers']

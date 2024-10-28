@@ -1,0 +1,12 @@
+---
+- name: Prepare VMs for RKE2
+  import_playbook: tasks/prepare_vm.yaml
+
+- name: Deploy RKE2 
+  import_playbook: tasks/deploy_rke2.yaml
+
+- name: Post Install
+  import_playbook: tasks/post_install.yaml
+
+- name: Install Rancher on RKE2 master
+  import_playbook: tasks/install_rancher.yaml

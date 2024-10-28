@@ -1,0 +1,8 @@
+- Make it executable:
+    chmod +x setup_ansible_env.sh
+- Optionally, override IPs using export:
+    export MASTER_IP=192.168.198.145
+    export WORKER1_IP=192.168.198.134
+    export WORKER2_IP=192.168.198.135
+- Run the script:
+    ./ansible.sh

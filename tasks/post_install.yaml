@@ -1,0 +1,20 @@
+---
+- name: Post-Installation
+  hosts: masters
+  become: yes
+  tasks:
+    - name: Copy post_install.sh script to master node
+      copy:
+        src: ./bash script/post_install.sh
+        dest: /tmp/post_install.sh
+        mode: '0755'
+
+    - name: Run post_install.sh script
+      shell: "/tmp/post_install.sh"
+      args:
+        chdir: /tmp
+      register: post_install_output
+
+    - name: Display output from post_install.sh
+      debug:
+        msg: "{{ post_install_output.stdout }}"

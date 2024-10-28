@@ -1,0 +1,20 @@
+---
+- name: Install Rancher on RKE2 master
+  hosts: masters
+  become: yes
+  tasks:
+    - name: Copy install_rancher.sh script to master node
+      copy:
+        src: ./bash script/install_rancher.sh
+        dest: /tmp/install_rancher.sh
+        mode: '0755'
+
+    - name: Run install_rancher.sh script
+      shell: "/tmp/install_rancher.sh"
+      args:
+        chdir: /tmp
+      register: install_rancher_output
+
+    - name: Display output from install_rancher.sh
+      debug:
+        msg: "{{ install_rancher_output.stdout }}"
