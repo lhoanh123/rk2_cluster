@@ -1,10 +1,11 @@
 #!/bin/bash
 
-# Define default IPs (can be overridden by export or direct assignment before running)
+# Define default values (can be overridden by export or direct assignment before running)
+: "${USERNAME:=master1}"            # Username for SSH
 : "${ANSIBLE_HOST_IP:=192.168.198.129}"
 : "${MASTER_IP:=192.168.198.141}"
 : "${WORKER1_IP:=192.168.198.132}"
-: "${WORKER2_IP:=}"  # Optional, leave blank if there's only one worker
+: "${WORKER2_IP:=}"                 # Optional, leave blank if there's only one worker
 
 # Update and install OpenSSH server
 sudo apt update
@@ -20,10 +21,10 @@ if [ ! -f "$HOME/.ssh/id_rsa" ]; then
 fi
 
 # Copy SSH keys to master and worker nodes
-ssh-copy-id "master1@$MASTER_IP"
-ssh-copy-id "master1@$WORKER1_IP"
+ssh-copy-id "$USERNAME@$MASTER_IP"
+ssh-copy-id "$USERNAME@$WORKER1_IP"
 if [ -n "$WORKER2_IP" ]; then
-    ssh-copy-id "master1@$WORKER2_IP"
+    ssh-copy-id "$USERNAME@$WORKER2_IP"
 fi
 
 # Append IPs to /etc/hosts if not already present
@@ -46,15 +47,15 @@ fi
 # Update Ansible hosts file in the current folder
 cat > hosts <<EOF
 [masters]
-master1 ansible_host=$MASTER_IP rke2_type=server
+master1 ansible_host=$MASTER_IP ansible_user=$USERNAME rke2_type=server
 
 [workers]
-worker1 ansible_host=$WORKER1_IP rke2_type=agent
+worker1 ansible_host=$WORKER1_IP ansible_user=$USERNAME rke2_type=agent
 EOF
 
 if [ -n "$WORKER2_IP" ]; then
     cat >> hosts <<EOF
-worker2 ansible_host=$WORKER2_IP rke2_type=agent
+worker2 ansible_host=$WORKER2_IP ansible_user=$USERNAME rke2_type=agent
 EOF
 fi
 

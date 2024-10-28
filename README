@@ -1,6 +1,7 @@
 - Make it executable:
     chmod +x ansible.sh
-- Optionally, override IPs using export:
+- Optionally, override username and IPs using export:
+    export USERNAME=myuser
     export ANSIBLE_HOST_IP=192.168.198.145
     export MASTER_IP=192.168.198.145
     export WORKER1_IP=192.168.198.134
