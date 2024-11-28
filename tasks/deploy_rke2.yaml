@@ -3,5 +3,10 @@
   become: yes
   vars:
     rke2_version: v1.30.6+rke2r1
+    rke2_cni: [canal] # or [cilium]
+    rke2_server_options:
+      - "cluster-name: oanh-cluster" # Replace 'my-custom-cluster' with your desired name
+    rke2_cis_profile: "cis-1.23"
+    rke2_token: "yourNewSecureToken123456"
   roles:
      - role: lablabs.rke2
