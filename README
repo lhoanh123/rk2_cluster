@@ -3,6 +3,6 @@
 - Optionally, override username and IPs using export:
     sudo USERNAME=ubuntu \
         ANSIBLE_HOST_IP=192.168.9.128 \
-        MASTER_IP=192.168.9.133 \
-        WORKER1_IP=192.168.9.136 \
+        MASTER_IPS="192.168.9.133 192.168.9.137 192.168.9.138" \
+        WORKER_IPS="192.168.9.139" \
         ./ansible.sh

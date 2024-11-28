@@ -3,9 +3,10 @@
 # Define default values (can be overridden by export or direct assignment before running)
 : "${USERNAME:=master1}"            # Username for SSH
 : "${ANSIBLE_HOST_IP:=192.168.198.129}"
-: "${MASTER_IP:=192.168.198.141}"
-: "${WORKER1_IP:=192.168.198.132}"
-: "${WORKER2_IP:=}"                 # Optional, leave blank if there's only one worker
+
+# Arrays of IPs for masters and workers
+MASTER_IPS=(${MASTER_IPS:-192.168.198.141})
+WORKER_IPS=(${WORKER_IPS:-192.168.198.132})
 
 # Update and install OpenSSH server
 sudo apt update
@@ -21,28 +22,40 @@ if [ ! -f "$HOME/.ssh/id_rsa" ]; then
 fi
 
 # Copy SSH keys to master and worker nodes
-ssh-copy-id "$USERNAME@$MASTER_IP"
-ssh-copy-id "$USERNAME@$WORKER1_IP"
-if [ -n "$WORKER2_IP" ]; then
-    ssh-copy-id "$USERNAME@$WORKER2_IP"
-fi
+for MASTER_IP in "${MASTER_IPS[@]}"; do
+    ssh-copy-id "$USERNAME@$MASTER_IP"
+done
 
-# Append IPs to /etc/hosts if not already present
-if ! grep -q "$ANSIBLE_HOST_IP ansible" /etc/hosts; then
-    echo "$ANSIBLE_HOST_IP ansible" | sudo tee -a /etc/hosts
-fi
+for WORKER_IP in "${WORKER_IPS[@]}"; do
+    ssh-copy-id "$USERNAME@$WORKER_IP"
+done
 
-if ! grep -q "$MASTER_IP master1" /etc/hosts; then
-    echo "$MASTER_IP master1" | sudo tee -a /etc/hosts
-fi
+# Function to add IPv4 entries to /etc/hosts
+add_to_hosts() {
+    local ip=$1
+    local hostname=$2
 
-if ! grep -q "$WORKER1_IP worker1" /etc/hosts; then
-    echo "$WORKER1_IP worker1" | sudo tee -a /etc/hosts
-fi
+    # Check if the entry already exists in the IPv4 section
+    if ! grep -q "^$ip" /etc/hosts; then
+        # Append to the IPv4 section, ensuring it's added before the IPv6 section
+        sudo sed -i "/^# The following lines are desirable for IPv6 capable hosts/i\\$ip $hostname" /etc/hosts
+    fi
+}
 
-if [ -n "$WORKER2_IP" ] && ! grep -q "$WORKER2_IP worker2" /etc/hosts; then
-    echo "$WORKER2_IP worker2" | sudo tee -a /etc/hosts
-fi
+# Update the Ansible control node
+add_to_hosts "$ANSIBLE_HOST_IP" "ansible"
+
+# Update master nodes
+for i in "${!MASTER_IPS[@]}"; do
+    MASTER_IP=${MASTER_IPS[i]}
+    add_to_hosts "$MASTER_IP" "master$((i+1))"
+done
+
+# Update worker nodes
+for i in "${!WORKER_IPS[@]}"; do
+    WORKER_IP=${WORKER_IPS[i]}
+    add_to_hosts "$WORKER_IP" "worker$((i+1))"
+done
 
 # Install Ansible Galaxy role for RKE2
 ansible-galaxy install lablabs.rke2
@@ -50,17 +63,22 @@ ansible-galaxy install lablabs.rke2
 # Update Ansible hosts file in the current folder
 cat > hosts <<EOF
 [masters]
-master1 ansible_host=$MASTER_IP ansible_user=$USERNAME rke2_type=server
+EOF
+
+for i in "${!MASTER_IPS[@]}"; do
+    MASTER_IP=${MASTER_IPS[i]}
+    echo "master$((i+1)) ansible_host=$MASTER_IP ansible_user=$USERNAME rke2_type=server" >> hosts
+done
+
+cat >> hosts <<EOF
 
 [workers]
-worker1 ansible_host=$WORKER1_IP ansible_user=$USERNAME rke2_type=agent
 EOF
 
-if [ -n "$WORKER2_IP" ]; then
-    cat >> hosts <<EOF
-worker2 ansible_host=$WORKER2_IP ansible_user=$USERNAME rke2_type=agent
-EOF
-fi
+for i in "${!WORKER_IPS[@]}"; do
+    WORKER_IP=${WORKER_IPS[i]}
+    echo "worker$((i+1)) ansible_host=$WORKER_IP ansible_user=$USERNAME rke2_type=agent" >> hosts
+done
 
 cat >> hosts <<EOF
 

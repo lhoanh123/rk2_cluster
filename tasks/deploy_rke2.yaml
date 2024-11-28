@@ -2,6 +2,6 @@
   hosts: all
   become: yes
   vars:
-    rke2_version: v1.30.5+rke2r1
+    rke2_version: v1.30.6+rke2r1
   roles:
      - role: lablabs.rke2
