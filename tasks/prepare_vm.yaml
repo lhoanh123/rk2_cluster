@@ -60,12 +60,15 @@
       apt:
         autoremove: yes
 
-    - name: Update /etc/hosts file with Ansible inventory
-      lineinfile:
+    - name: Update /etc/hosts file with Ansible inventory in IPv4 section
+      blockinfile:
         path: /etc/hosts
-        line: "{{ item }}"
+        marker: "# Added by Ansible - IPv4 Section"
+        block: |
+          {% for item in groups['all'] %}
+          {{ hostvars[item].ansible_host }} {{ item }}
+          {% endfor %}
         state: present
-      loop: "{{ groups['all'] | map('extract', hostvars, ['ansible_host']) | zip(groups['all']) | map('join', ' ') }}"
       when: ansible_host is defined
 
     - name: Set hostname based on inventory_hostname
