@@ -19,6 +19,6 @@ helm upgrade -i cert-manager jetstack/cert-manager --namespace cert-manager --cr
 
 # Install or upgrade Rancher
 echo "Installing or upgrading Rancher..."
-helm upgrade -i rancher rancher-latest/rancher --create-namespace --namespace cattle-system --set hostname=rancher.mylab.com --set bootstrapPassword=admin --set replicas=2
+helm upgrade -i rancher rancher-latest/rancher --create-namespace --namespace cattle-system --set hostname=rancher.mylab.com --set bootstrapPassword=admin --set replicas=1
 
 echo "Installation completed."

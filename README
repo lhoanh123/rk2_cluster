@@ -1,8 +1,52 @@
-- Make it executable:
+Làm cho Script có thể thực thi:
     sudo chmod +x ansible.sh
-- Optionally, override username and IPs using export:
+
+Tùy chọn, ghi đè các biến qua dòng lệnh:
+1. Chế độ Normal (1 Master và 1 hoặc nhiều Worker):
     sudo USERNAME=ubuntu \
-        ANSIBLE_HOST_IP=192.168.9.128 \
-        MASTER_IPS="192.168.9.133 192.168.9.137 192.168.9.138" \
-        WORKER_IPS="192.168.9.139" \
+        ANSIBLE_HOST_IP=192.168.198.129 \
+        MASTER_IPS="192.168.198.141" \
+        WORKER_IPS="192.168.198.132 192.168.198.133" \
+        RKE2_MODE=normal \
+        RKE2_VERSION=v1.30.6+rke2r1 \
+        RKE2_CNI=canal \
+        CLUSTER_NAME=oanh-cluster \
+        RKE2_TOKEN="yourSecureToken123" \
         ./ansible.sh
+        
+2. Chế độ High Availability (HA) (Nhiều Master và 1 hoặc nhiều Worker):
+    sudo USERNAME=ubuntu \
+        ANSIBLE_HOST_IP=192.168.198.129 \
+        MASTER_IPS="192.168.198.141 192.168.198.142 192.168.198.143" \
+        WORKER_IPS="192.168.198.132" \
+        API_IP=192.168.198.100 \
+        RKE2_MODE=ha \
+        RKE2_VERSION=v1.30.6+rke2r1 \
+        RKE2_CNI=canal \
+        CLUSTER_NAME=oanh-cluster \
+        RKE2_TOKEN="yourSecureToken123" \
+        ./ansible.sh
+
+Giải thích các biến môi trường:
+- USERNAME (Mặc định: ubuntu): Tên người dùng SSH để đăng nhập vào các node master và worker. Ghi đè biến này nếu tên người dùng của bạn khác với mặc định ubuntu
+    
+- ANSIBLE_HOST_IP (Mặc định: 192.168.198.129): Địa chỉ IP của máy chủ Ansible. Đây là địa chỉ của máy chạy Ansible và thực hiện các kết nối SSH đến các node khác
+    
+- MASTER_IPS (Mặc định: 192.168.198.141): Danh sách các địa chỉ IP cho các node master trong cluster Kubernetes của bạn. Đảm bảo danh sách này bao gồm tất cả các địa chỉ IP của các node master nếu bạn đang cài đặt một cluster có nhiều master.
+
+- WORKER_IPS (Mặc định: 192.168.198.132): Danh sách các địa chỉ IP cho các node worker trong cluster Kubernetes của bạn. Bao gồm tất cả các địa chỉ IP của các node worker mà bạn muốn thêm vào cluster.
+
+- API_IP (Cần thiết cho chế độ HA): Địa chỉ IP được sử dụng cho bộ cân bằng tải API Kubernetes trong một cấu hình High Availability (HA). Để trống hoặc không cung cấp trong chế độ bình thường, nhưng cần thiết trong chế độ HA.
+
+- RKE2_MODE (Mặc định: normal): Chế độ cài đặt cho RKE2.
+Có thể chọn:
+    normal: Cài đặt với một node master và một hoặc nhiều node worker.
+    ha: Cài đặt High Availability (HA) với nhiều node master và một hoặc nhiều node worker.
+
+- RKE2_VERSION (Mặc định: v1.30.6+rke2r1): Phiên bản của RKE2 sẽ được cài đặt trên các node. Đặt biến này thành phiên bản RKE2 mà bạn muốn triển khai.
+
+- RKE2_CNI (Mặc định: canal): Plugin Container Network Interface (CNI) sử dụng cho mạng trong cluster RKE2 của bạn. canal là mặc định, nhưng bạn có thể chọn các CNI khác hỗ trợ bởi RKE2, ví dụ flannel hoặc calico.
+
+- CLUSTER_NAME (Mặc định: oanh-cluster): Tên của cluster Kubernetes. Đặt tên này thành tên tùy chỉnh để dễ dàng nhận diện cluster của bạn.
+
+- RKE2_TOKEN (Mặc định: "yourSecureToken123"): Token RKE2 được sử dụng để xác thực giữa các node trong cluster. Thay thế token này bằng token bảo mật của bạn để đảm bảo việc giao tiếp giữa các node.

@@ -60,6 +60,13 @@
       apt:
         autoremove: yes
 
+    - name: Add API IP with hostname lb to /etc/hosts
+      lineinfile:
+        path: /etc/hosts
+        line: "{{ api_ip }} lb"
+        create: yes
+      when: api_ip is defined
+
     - name: Update /etc/hosts file with Ansible inventory in IPv4 section
       blockinfile:
         path: /etc/hosts

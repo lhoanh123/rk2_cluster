@@ -1,15 +1,22 @@
 - name: Deploy RKE2
-  hosts: all
+  hosts: k8s_cluster
   become: yes
   vars:
+    rke2_version: "{{ rke2_version }}"
+    rke2_cni: ["{{ rke2_cni }}"] # or [cilium]
+    rke2_cis_profile: "cis-1.23"
+    rke2_token: "{{ rke2_token }}"
+    rke2_server_options:
+      - "cluster-name: {{ rke2_cluster_name }}" # Replace 'my-custom-cluster' with your desired name
     rke2_ha_mode: true
-    rke2_api_ip: 192.168.9.200
+    rke2_api_ip: "{{ rke2_api_ip }}"
     rke2_download_kubeconf: true
+    rke2_additional_sans:
+      - rke2.homelab.com
+      - "{{ rke2_api_ip }}"
+    rke2_loadbalancer_ip_range:
+      range-global: "{{ rke2_loadbalancer_range }}"
     rke2_server_node_taints:
       - 'CriticalAddonsOnly=true:NoExecute'
-    rke2_cni: [canal] # or [cilium]
-    rke2_server_options:
-      - "cluster-name: oanh-cluster" # Replace 'my-custom-cluster' with your desired name
-    rke2_token: "yourNewSecureToken123456"
   roles:
      - role: lablabs.rke2

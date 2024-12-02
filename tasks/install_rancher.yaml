@@ -1,6 +1,6 @@
 ---
 - name: Install Rancher on RKE2 master
-  hosts: masters
+  hosts: master1
   become: yes
   tasks:
     - name: Copy install_rancher.sh script to master node
