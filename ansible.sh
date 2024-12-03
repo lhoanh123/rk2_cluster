@@ -94,33 +94,6 @@ masters
 workers
 EOF
 
-# Function to calculate the IP range for the load balancer
-calculate_range() {
-    local subnet_prefix=${API_IP%.*}   # Extract the subnet (e.g., 192.168.9)
-    local exclude_ips=("${MASTER_IPS[@]}" "${WORKER_IPS[@]}" "$API_IP")
-    local start_range=26
-    local end_range=126
-    local range=()
-
-    # Generate the IP range excluding master, worker, and API IPs
-    for i in $(seq $start_range $end_range); do
-        candidate="$subnet_prefix.$i"
-        if [[ ! " ${exclude_ips[@]} " =~ " $candidate " ]]; then
-            range+=("$candidate")
-        fi
-    done
-
-    echo "${range[0]}-${range[-1]}"    # Return the range in the required format
-}
-
-# Calculate load balancer IP range if API_IP is provided
-if [[ -n $API_IP ]]; then
-    RKE2_LOADBALANCER_RANGE=$(calculate_range)
-else
-    echo "API_IP is not set. Exiting."
-    exit 1
-fi
-
 # Prompt for the 'become' password (sudo access)
 echo "Please enter the become password:"
 read -s BECOME_PASS
