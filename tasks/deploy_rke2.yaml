@@ -1,5 +1,5 @@
 - name: Deploy RKE2
-  hosts: all
+  hosts: k8s_cluster
   become: yes
   vars:
     rke2_version: "{{ rke2_version }}"

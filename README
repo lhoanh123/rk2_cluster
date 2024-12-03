@@ -57,3 +57,5 @@ Có thể chọn:
 - CLUSTER_NAME (Mặc định: oanh-cluster): Tên của cluster Kubernetes. Đặt tên này thành tên tùy chỉnh để dễ dàng nhận diện cluster của bạn.
 
 - RKE2_TOKEN (Mặc định: "yourSecureToken123"): Token RKE2 được sử dụng để xác thực giữa các node trong cluster. Thay thế token này bằng token bảo mật của bạn để đảm bảo việc giao tiếp giữa các node.
+
+- RKE2_LOADBALANCER_RANGE (Yêu cầu trong chế độ HA): Dải IP cho load balancer trong chế độ HA. Ví dụ: 192.168.198.200-192.168.198.220.
