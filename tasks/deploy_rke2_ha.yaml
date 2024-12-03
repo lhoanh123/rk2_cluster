@@ -4,7 +4,7 @@
   vars:
     rke2_version: "{{ rke2_version }}"
     rke2_cni: ["{{ rke2_cni }}"] # or [cilium]
-    rke2_cis_profile: "cis-1.23"
+    rke2_cis_profile: "cis-1.5"
     rke2_token: "{{ rke2_token }}"
     rke2_server_options:
       - "cluster-name: {{ rke2_cluster_name }}" # Replace 'my-custom-cluster' with your desired name
