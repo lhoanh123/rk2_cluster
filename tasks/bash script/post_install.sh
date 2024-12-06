@@ -16,20 +16,7 @@ else
     echo "Helm is installed: $(helm version --short)"
 fi
 
-# Symlink kubectl
-KUBECTL_PATH=$(find /var/lib/rancher/rke2/data/ -name kubectl 2>/dev/null)
-if [[ -n "$KUBECTL_PATH" ]]; then
-    echo "Creating symlink for kubectl..."
-    sudo ln -sf "$KUBECTL_PATH" /usr/local/bin/kubectl
-else
-    echo "kubectl not found in /var/lib/rancher/rke2/data/"
-    exit 1
-fi
-
-# Set KUBECONFIG environment variable
-echo "export KUBECONFIG=/etc/rancher/rke2/rke2.yaml" >> ~/.bashrc
-source ~/.bashrc
-
+# Write configuration for Helm chart
 mkdir -p /var/lib/rancher/rke2/server/manifests
 touch /var/lib/rancher/rke2/server/manifests/rke2-ingress-nginx-config.yaml
 
@@ -45,3 +32,17 @@ spec:
         use-forwarded-headers: true
       extraArgs:
         enable-ssl-passthrough: true" > /var/lib/rancher/rke2/server/manifests/rke2-ingress-nginx-config.yaml
+
+# Symlink kubectl
+KUBECTL_PATH=$(find /var/lib/rancher/rke2/data/ -name kubectl 2>/dev/null)
+if [[ -n "$KUBECTL_PATH" ]]; then
+    echo "Creating symlink for kubectl..."
+    sudo ln -sf "$KUBECTL_PATH" /usr/local/bin/kubectl
+else
+    echo "kubectl not found in /var/lib/rancher/rke2/data/"
+    exit 1
+fi
+
+# Set KUBECONFIG environment variable
+echo "export KUBECONFIG=/etc/rancher/rke2/rke2.yaml" >> ~/.bashrc
+source ~/.bashrc
