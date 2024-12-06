@@ -1,4 +1,3 @@
----
 - name: Prepare VMs for RKE2
   hosts: k8s_cluster
   become: yes
@@ -65,7 +64,7 @@
         path: /etc/hosts
         line: "{{ api_ip }} lb"
         create: yes
-      when: api_ip is defined
+      when: api_ip is defined and rke2_mode == 'ha'
 
     - name: Update /etc/hosts file with Ansible inventory in IPv4 section
       blockinfile:
