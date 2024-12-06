@@ -5,7 +5,6 @@
 : "${ANSIBLE_HOST_IP:=192.168.198.129}" # Control machine IP
 : "${RKE2_VERSION:=v1.30.6+rke2r1}"     # Default RKE2 version
 : "${RKE2_MODE:=normal}"               # Default mode (normal or ha)
-: "${CLUSTER_NAME:=oanh-cluster}"      # Default cluster name
 : "${RKE2_TOKEN:=yourSecureToken123}"  # Default RKE2 token
 : "${API_IP:=}"                        # Default API IP (empty for normal mode)
 : "${RKE2_CNI:=canal}"                 # Default CNI (Container Network Interface)
@@ -144,7 +143,7 @@ ansible-playbook -i hosts tasks/prepare_vm.yaml --extra-vars "api_ip=$API_IP"
 if [[ $RKE2_MODE == "normal" && ${#MASTER_IPS[@]} -eq 1 && ${#WORKER_IPS[@]} -ge 1 ]]; then
     # Normal mode: one master and one or more workers
     ansible-playbook -i hosts tasks/deploy_rke2.yaml \
-        --extra-vars "rke2_cni=$RKE2_CNI rke2_version=$RKE2_VERSION rke2_cluster_name=$CLUSTER_NAME rke2_token=$RKE2_TOKEN"
+        --extra-vars "rke2_cni=$RKE2_CNI rke2_version=$RKE2_VERSION rke2_token=$RKE2_TOKEN"
 elif [[ $RKE2_MODE == "ha" && ${#MASTER_IPS[@]} -gt 1 && ${#WORKER_IPS[@]} -ge 1 ]]; then
     # HA mode: multiple masters and one or more workers
     if [[ -z $API_IP || -z $RKE2_LOADBALANCER_RANGE ]]; then
@@ -152,7 +151,7 @@ elif [[ $RKE2_MODE == "ha" && ${#MASTER_IPS[@]} -gt 1 && ${#WORKER_IPS[@]} -ge 1
         exit 1
     fi
     ansible-playbook -i hosts tasks/deploy_rke2_ha.yaml \
-        --extra-vars "rke2_cni=$RKE2_CNI rke2_version=$RKE2_VERSION rke2_cluster_name=$CLUSTER_NAME rke2_token=$RKE2_TOKEN rke2_api_ip=$API_IP rke2_loadbalancer_ip_range=range-global:$RKE2_LOADBALANCER_RANGE"
+        --extra-vars "rke2_cni=$RKE2_CNI rke2_version=$RKE2_VERSION rke2_token=$RKE2_TOKEN rke2_api_ip=$API_IP rke2_loadbalancer_ip_range=range-global:$RKE2_LOADBALANCER_RANGE"
 else
     echo "Invalid configuration: Please check RKE2_MODE, MASTER_IPS, and WORKER_IPS."
     exit 1

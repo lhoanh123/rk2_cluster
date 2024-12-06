@@ -17,7 +17,6 @@ III. Tùy chọn, ghi đè các biến qua dòng lệnh:
         RKE2_MODE=normal \
         RKE2_VERSION=v1.30.6+rke2r1 \
         RKE2_CNI=canal \
-        CLUSTER_NAME=oanh-cluster \
         RKE2_TOKEN="yourSecureToken123" \
         ./ansible.sh
         
@@ -30,7 +29,6 @@ III. Tùy chọn, ghi đè các biến qua dòng lệnh:
         RKE2_MODE=ha \
         RKE2_VERSION=v1.30.6+rke2r1 \
         RKE2_CNI=canal \
-        CLUSTER_NAME=oanh-cluster \
         RKE2_TOKEN="yourSecureToken123" \
         RKE2_LOADBALANCER_RANGE="192.168.198.10-192.168.198.110" \
         ./ansible.sh
@@ -54,8 +52,6 @@ Có thể chọn:
 - RKE2_VERSION (Mặc định: v1.30.6+rke2r1): Phiên bản của RKE2 sẽ được cài đặt trên các node. Đặt biến này thành phiên bản RKE2 mà bạn muốn triển khai.
 
 - RKE2_CNI (Mặc định: canal): Plugin Container Network Interface (CNI) sử dụng cho mạng trong cluster RKE2 của bạn. canal là mặc định, nhưng bạn có thể chọn các CNI khác hỗ trợ bởi RKE2, ví dụ flannel hoặc calico.
-
-- CLUSTER_NAME (Mặc định: oanh-cluster): Tên của cluster Kubernetes. Đặt tên này thành tên tùy chỉnh để dễ dàng nhận diện cluster của bạn.
 
 - RKE2_TOKEN (Mặc định: "yourSecureToken123"): Token RKE2 được sử dụng để xác thực giữa các node trong cluster. Thay thế token này bằng token bảo mật của bạn để đảm bảo việc giao tiếp giữa các node.
 
