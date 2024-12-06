@@ -76,20 +76,26 @@ done
 
 # Function to get the latest version of lablabs.rke2 from GitHub releases
 get_latest_version() {
-    # Get the latest release version from the GitHub page using curl and grep
     curl -s https://github.com/lablabs/ansible-role-rke2/releases | \
-        grep -oP 'v[0-9]+\.[0-9]+\.[0-9]+(?:-[a-z0-9]+)?' | head -n 1
+        grep -oP 'v[0-9]+\.[0-9]+\.[0-9]+' | head -n 1
 }
 
 # Get the installed version of lablabs.rke2
-INSTALLED_VERSION=$(ansible-galaxy list | grep "lablabs.rke2" | awk '{print $2}' | tr -d '()')
+INSTALLED_VERSION=$(ansible-galaxy list 2>/dev/null | grep "lablabs.rke2" | awk '{print $2}' | tr -d '()')
 
 # Fetch the latest version from GitHub
 LATEST_VERSION=$(get_latest_version)
 
-if [ "$INSTALLED_VERSION" != "$LATEST_VERSION" ]; then
+# If LATEST_VERSION is empty, fail gracefully
+if [[ -z $LATEST_VERSION ]]; then
+    echo "Error: Could not fetch the latest version from GitHub."
+    exit 1
+fi
+
+# Compare and update if necessary
+if [[ "$INSTALLED_VERSION" != "$LATEST_VERSION" ]]; then
     echo "Updating lablabs.rke2 to the latest version ($LATEST_VERSION)..."
-    ansible-galaxy install lablabs.rke2 --force
+    ansible-galaxy install lablabs.rke2 --roles-path ~/.ansible/roles --force
 else
     echo "lablabs.rke2 is already at the latest version ($INSTALLED_VERSION)."
 fi
