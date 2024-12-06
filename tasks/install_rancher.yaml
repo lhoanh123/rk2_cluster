@@ -1,20 +1,30 @@
----
 - name: Install Rancher on RKE2 master
-  hosts: master1
+  hosts: master1  # This should match the inventory host group
   become: yes
+  vars:
+    kubeconfig_path: /etc/rancher/rke2/rke2.yaml  # Path to the Kubeconfig
+
   tasks:
     - name: Copy install_rancher.sh script to master node
       copy:
-        src: ./bash_script/install_rancher.sh
+        src: ./bash_script/install_rancher.sh  # Avoid spaces in folder name
         dest: /tmp/install_rancher.sh
         mode: '0755'
+
+    - name: Ensure kubectl context is set to default
+      shell: kubectl config use-context default
+      become: yes
+      ignore_errors: yes  # Ignore errors if context is already set correctly
 
     - name: Run install_rancher.sh script
       shell: "/tmp/install_rancher.sh"
       args:
         chdir: /tmp
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"  # Use the variable for Kubeconfig path
       register: install_rancher_output
 
     - name: Display output from install_rancher.sh
       debug:
         msg: "{{ install_rancher_output.stdout }}"
+

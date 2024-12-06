@@ -9,10 +9,17 @@
         dest: /tmp/post_install.sh
         mode: '0755'
 
+    - name: Ensure correct kubectl context is set
+      shell: kubectl config use-context default
+      become: yes
+      ignore_errors: yes  # Ignore errors if context is already set correctly
+
     - name: Run post_install.sh script
       shell: "/tmp/post_install.sh"
       args:
         chdir: /tmp
+      environment:
+        KUBECONFIG: /etc/rancher/rke2/rke2.yaml  # Adjust the path if necessary
       register: post_install_output
 
     - name: Display output from post_install.sh
