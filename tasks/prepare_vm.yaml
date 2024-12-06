@@ -64,7 +64,7 @@
         path: /etc/hosts
         line: "{{ api_ip }} lb"
         create: yes
-      when: api_ip is defined and rke2_mode == 'ha'
+      when: api_ip is defined
 
     - name: Update /etc/hosts file with Ansible inventory in IPv4 section
       blockinfile:
