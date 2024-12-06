@@ -60,7 +60,7 @@
       apt:
         autoremove: yes
 
-    - name: Add API IP with hostname lb to /etc/hosts
+    - name: Add API IP with hostname lb to /etc/hosts (only in HA mode)
       lineinfile:
         path: /etc/hosts
         line: "{{ api_ip }} lb"

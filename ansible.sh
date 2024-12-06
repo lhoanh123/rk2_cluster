@@ -15,13 +15,23 @@
 MASTER_IPS=(${MASTER_IPS:-192.168.198.141})
 WORKER_IPS=(${WORKER_IPS:-192.168.198.132})
 
-# Update and install OpenSSH server
-sudo apt update
-sudo apt install -y openssh-server
+# Check if SSH is installed; if not, install it
+if ! dpkg -l | grep -q openssh-server; then
+    echo "OpenSSH Server is not installed. Installing..."
+    sudo apt update
+    sudo apt install -y openssh-server
+else
+    echo "OpenSSH Server is already installed."
+fi
 
-# Enable and start SSH service
-sudo systemctl enable ssh
-sudo systemctl start ssh
+# Enable and start SSH service if not already running
+if ! systemctl is-active --quiet ssh; then
+    echo "Starting SSH service..."
+    sudo systemctl enable ssh
+    sudo systemctl start ssh
+else
+    echo "SSH service is already running."
+fi
 
 # Generate SSH keys if they don’t already exist
 if [ ! -f "$HOME/.ssh/id_rsa" ]; then
@@ -64,8 +74,18 @@ for i in "${!WORKER_IPS[@]}"; do
     add_to_hosts "$WORKER_IP" "worker$((i+1))"
 done
 
-# Install Ansible Galaxy role for RKE2
-ansible-galaxy install lablabs.rke2 --force
+# Get the installed version of lablabs.rke2
+INSTALLED_VERSION=$(ansible-galaxy list | grep "lablabs.rke2" | awk '{print $2}' | tr -d '()')
+
+# Get the latest version of lablabs.rke2
+LATEST_VERSION=$(ansible-galaxy collection search lablabs.rke2 | grep -oP '(?<=latest: )v[0-9]+\.[0-9]+\.[0-9]+')
+
+if [ "$INSTALLED_VERSION" != "$LATEST_VERSION" ]; then
+    echo "Updating lablabs.rke2 to the latest version ($LATEST_VERSION)..."
+    ansible-galaxy install lablabs.rke2 --force
+else
+    echo "lablabs.rke2 is already at the latest version ($INSTALLED_VERSION)."
+fi
 
 # Create an Ansible hosts file with master and worker configurations
 cat > hosts <<EOF
