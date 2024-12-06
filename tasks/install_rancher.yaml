@@ -1,30 +1,46 @@
-- name: Install Rancher on RKE2 master
-  hosts: master1  # This should match the inventory host group
+---
+- name: Install Rancher and cert-manager using Helm
+  hosts: master1
   become: yes
-  vars:
-    kubeconfig_path: /etc/rancher/rke2/rke2.yaml  # Path to the Kubeconfig
-
   tasks:
-    - name: Copy install_rancher.sh script to master node
+    - name: Create a bash script for Helm installation
       copy:
-        src: ./bash_script/install_rancher.sh  # Avoid spaces in folder name
-        dest: /tmp/install_rancher.sh
+        dest: /tmp/rancher_install.sh
+        content: |
+          #!/bin/bash
+
+          # Add the Rancher and Jetstack Helm repositories
+          echo "Adding Rancher and Jetstack Helm repositories..."
+          helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
+          helm repo add jetstack https://charts.jetstack.io
+
+          # Update Helm repositories
+          echo "Updating Helm repositories..."
+          helm repo update
+
+          # Add the cert-manager CRD
+          echo "Applying cert-manager CRD..."
+          kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.16.1/cert-manager.crds.yaml
+
+          # Install or upgrade cert-manager
+          echo "Installing or upgrading cert-manager..."
+          helm upgrade -i cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace
+
+          # Install or upgrade Rancher
+          echo "Installing or upgrading Rancher..."
+          helm upgrade -i rancher rancher-latest/rancher --create-namespace --namespace cattle-system --set hostname=rancher.mylab.com --set bootstrapPassword=admin --set replicas=1
+
+          echo "Installation completed."
+
+    - name: Make the bash script executable
+      file:
+        path: /tmp/rancher_install.sh
         mode: '0755'
 
-    - name: Ensure kubectl context is set to default
-      shell: kubectl config use-context default
-      become: yes
-      ignore_errors: yes  # Ignore errors if context is already set correctly
+    - name: Run the Rancher installation script
+      command: /tmp/rancher_install.sh
 
-    - name: Run install_rancher.sh script
-      shell: "/tmp/install_rancher.sh"
-      args:
-        chdir: /tmp
-      environment:
-        KUBECONFIG: "{{ kubeconfig_path }}"  # Use the variable for Kubeconfig path
-      register: install_rancher_output
-
-    - name: Display output from install_rancher.sh
-      debug:
-        msg: "{{ install_rancher_output.stdout }}"
-
+    - name: Clean up the installation script
+      file:
+        path: /tmp/rancher_install.sh
+        state: absent

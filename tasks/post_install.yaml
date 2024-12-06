@@ -1,27 +1,70 @@
 ---
-- name: Post-Installation
+- name: Install and configure Helm, curl, kubectl for RKE2
   hosts: masters
   become: yes
   tasks:
-    - name: Copy post_install.sh script to master node
+    - name: Create the bash script for Helm, curl, kubectl installation and configuration
       copy:
-        src: ./bash_script/post_install.sh
         dest: /tmp/post_install.sh
+        content: |
+          #!/bin/bash
+
+          # Check and install curl if it's not installed
+          if ! command -v curl &> /dev/null; then
+              echo "Installing curl..."
+              sudo apt update && sudo apt install -y curl
+          else
+              echo "curl is installed: $(curl --version | head -n 1)"
+          fi
+
+          # Install Helm if it's not installed
+          if ! command -v helm &> /dev/null; then
+              echo "Installing Helm..."
+              curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+          else
+              echo "Helm is installed: $(helm version --short)"
+          fi
+
+          # Write configuration for Helm chart
+          mkdir -p /var/lib/rancher/rke2/server/manifests
+          touch /var/lib/rancher/rke2/server/manifests/rke2-ingress-nginx-config.yaml
+
+          echo "apiVersion: helm.cattle.io/v1
+          kind: HelmChartConfig
+          metadata:
+            name: rke2-ingress-nginx
+            namespace: kube-system
+          spec:
+            valuesContent: |-
+              controller:
+                config:
+                  use-forwarded-headers: true
+                extraArgs:
+                  enable-ssl-passthrough: true" > /var/lib/rancher/rke2/server/manifests/rke2-ingress-nginx-config.yaml
+
+          # Symlink kubectl
+          KUBECTL_PATH=$(find /var/lib/rancher/rke2/data/ -name kubectl 2>/dev/null)
+          if [[ -n "$KUBECTL_PATH" ]]; then
+              echo "Creating symlink for kubectl..."
+              sudo ln -sf "$KUBECTL_PATH" /usr/local/bin/kubectl
+          else
+              echo "kubectl not found in /var/lib/rancher/rke2/data/"
+              exit 1
+          fi
+
+          # Set KUBECONFIG environment variable
+          echo "export KUBECONFIG=/etc/rancher/rke2/rke2.yaml" >> ~/.bashrc
+          source ~/.bashrc
+
+    - name: Make the bash script executable
+      file:
+        path: /tmp/post_install.sh
         mode: '0755'
 
-    - name: Ensure correct kubectl context is set
-      shell: kubectl config use-context default
-      become: yes
-      ignore_errors: yes  # Ignore errors if context is already set correctly
+    - name: Run the RKE2 installation script
+      command: /tmp/post_install.sh
 
-    - name: Run post_install.sh script
-      shell: "/tmp/post_install.sh"
-      args:
-        chdir: /tmp
-      environment:
-        KUBECONFIG: /etc/rancher/rke2/rke2.yaml  # Adjust the path if necessary
-      register: post_install_output
-
-    - name: Display output from post_install.sh
-      debug:
-        msg: "{{ post_install_output.stdout }}"
+    - name: Clean up the installation script
+      file:
+        path: /tmp/post_install.sh
+        state: absent

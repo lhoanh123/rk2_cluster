@@ -16,7 +16,8 @@ WORKER_IPS=(${WORKER_IPS:-192.168.198.132})
 
 # Prepare Ansible machine
 sudo apt update
-sudo apt install jq
+sudo apt install jq -y
+sudo apt install ansible -y
 
 # Check if SSH is installed; if not, install it
 if ! dpkg -l | grep -q openssh-server; then
