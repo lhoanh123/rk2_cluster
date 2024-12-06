@@ -15,10 +15,13 @@
 MASTER_IPS=(${MASTER_IPS:-192.168.198.141})
 WORKER_IPS=(${WORKER_IPS:-192.168.198.132})
 
+# Prepare Ansible machine
+sudo apt update
+sudo apt install jq
+
 # Check if SSH is installed; if not, install it
 if ! dpkg -l | grep -q openssh-server; then
     echo "OpenSSH Server is not installed. Installing..."
-    sudo apt update
     sudo apt install -y openssh-server
 else
     echo "OpenSSH Server is already installed."
@@ -84,7 +87,7 @@ get_latest_version() {
 INSTALLED_VERSION=$(ansible-galaxy list 2>/dev/null | grep "lablabs.rke2" | awk '{print $2}' | tr -d '()')
 
 # Fetch the latest version from GitHub
-LATEST_VERSION=$(get_latest_version)
+LATEST_VERSION=$(curl -s https://api.github.com/repos/lablabs/ansible-role-rke2/releases/latest | jq -r .tag_name)
 
 # If LATEST_VERSION is empty, fail gracefully
 if [[ -z $LATEST_VERSION ]]; then
