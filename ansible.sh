@@ -74,11 +74,18 @@ for i in "${!WORKER_IPS[@]}"; do
     add_to_hosts "$WORKER_IP" "worker$((i+1))"
 done
 
+# Function to get the latest version of lablabs.rke2 from GitHub releases
+get_latest_version() {
+    # Get the latest release version from the GitHub page using curl and grep
+    curl -s https://github.com/lablabs/ansible-role-rke2/releases | \
+        grep -oP 'v[0-9]+\.[0-9]+\.[0-9]+(?:-[a-z0-9]+)?' | head -n 1
+}
+
 # Get the installed version of lablabs.rke2
 INSTALLED_VERSION=$(ansible-galaxy list | grep "lablabs.rke2" | awk '{print $2}' | tr -d '()')
 
-# Get the latest version of lablabs.rke2
-LATEST_VERSION=$(ansible-galaxy collection search lablabs.rke2 | grep -oP '(?<=latest: )v[0-9]+\.[0-9]+\.[0-9]+')
+# Fetch the latest version from GitHub
+LATEST_VERSION=$(get_latest_version)
 
 if [ "$INSTALLED_VERSION" != "$LATEST_VERSION" ]; then
     echo "Updating lablabs.rke2 to the latest version ($LATEST_VERSION)..."
