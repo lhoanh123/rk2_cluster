@@ -1,0 +1,40 @@
+---
+- name: Prepare and deploy RKE2 cluster
+  hosts: k8s_cluster
+  become: yes
+  vars:
+    rke2_cni: "{{ rke2_cni }}"
+    rke2_version: "{{ rke2_version }}"
+    rke2_token: "{{ rke2_token }}"
+    rke2_mode: "{{ rke2_mode }}"
+    api_ip: "{{ api_ip | default('') }}"
+    rke2_loadbalancer_range: "{{ rke2_loadbalancer_range | default('') }}"
+  tasks:
+    - name: Prepare VM nodes
+      include_tasks: tasks/prepare_vm.yaml
+
+    - name: Deploy RKE2 (Normal mode)
+      when: rke2_mode == "normal"
+      include_tasks: tasks/deploy_rke2.yaml
+      vars:
+        rke2_cni: "{{ rke2_cni }}"
+        rke2_version: "{{ rke2_version }}"
+        rke2_token: "{{ rke2_token }}"
+
+    - name: Deploy RKE2 (HA mode)
+      when: rke2_mode == "ha"
+      include_tasks: tasks/deploy_rke2_ha.yaml
+      vars:
+        rke2_cni: "{{ rke2_cni }}"
+        rke2_version: "{{ rke2_version }}"
+        rke2_token: "{{ rke2_token }}"
+        rke2_api_ip: "{{ api_ip }}"
+        rke2_loadbalancer_ip_range: "{{ rke2_loadbalancer_range }}"
+
+    - name: Run post-install tasks on master nodes
+      when: inventory_hostname in groups['masters']
+      include_tasks: tasks/post_install.yaml
+
+    - name: Install Rancher on master1
+      when: inventory_hostname == 'master1'
+      include_tasks: tasks/install_rancher.yaml
