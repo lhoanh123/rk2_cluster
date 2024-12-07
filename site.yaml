@@ -1,7 +1,6 @@
 ---
 - name: Prepare and deploy RKE2 cluster
-  hosts: k8s_cluster
-  become: yes
+  hosts: all
   vars:
     rke2_cni: "{{ rke2_cni }}"
     rke2_version: "{{ rke2_version }}"
@@ -11,11 +10,11 @@
     rke2_loadbalancer_range: "{{ rke2_loadbalancer_range | default('') }}"
   tasks:
     - name: Prepare VM nodes
-      include_tasks: tasks/prepare_vm.yaml
+      import_tasks: tasks/prepare_vm.yaml
 
     - name: Deploy RKE2 (Normal mode)
       when: rke2_mode == "normal"
-      include_tasks: tasks/deploy_rke2.yaml
+      import_tasks: tasks/deploy_rke2.yaml
       vars:
         rke2_cni: "{{ rke2_cni }}"
         rke2_version: "{{ rke2_version }}"
@@ -23,7 +22,7 @@
 
     - name: Deploy RKE2 (HA mode)
       when: rke2_mode == "ha"
-      include_tasks: tasks/deploy_rke2_ha.yaml
+      import_tasks: tasks/deploy_rke2_ha.yaml
       vars:
         rke2_cni: "{{ rke2_cni }}"
         rke2_version: "{{ rke2_version }}"
@@ -33,8 +32,8 @@
 
     - name: Run post-install tasks on master nodes
       when: inventory_hostname in groups['masters']
-      include_tasks: tasks/post_install.yaml
+      import_tasks: tasks/post_install.yaml
 
     - name: Install Rancher on master1
       when: inventory_hostname == 'master1'
-      include_tasks: tasks/install_rancher.yaml
+      import_tasks: tasks/install_rancher.yaml

@@ -1,5 +1,7 @@
 ---
 - name: Install and configure Helm, curl, kubectl for RKE2
+  hosts: masters
+  become: yes
   tasks:
     - name: Create the bash script for Helm, curl, kubectl installation and configuration
       copy:
