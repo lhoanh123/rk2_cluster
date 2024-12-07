@@ -18,6 +18,7 @@ WORKER_IPS=(${WORKER_IPS:-192.168.198.132})
 sudo apt update
 sudo apt install jq -y
 sudo apt install ansible -y
+ansible-galaxy install lablabs.rke2 --force
 
 # Check if SSH is installed; if not, install it
 if ! dpkg -l | grep -q openssh-server; then
@@ -55,11 +56,11 @@ add_to_hosts() {
     local ip=$1
     local hostname=$2
 
-    # Check if the entry already exists in the IPv4 section
-    if ! grep -q "^$ip" /etc/hosts; then
-        # Append to the IPv4 section, ensuring it's added before the IPv6 section
-        sudo sed -i "/^# The following lines are desirable for IPv6 capable hosts/i\\$ip $hostname" /etc/hosts
-    fi
+    # Remove any existing entry with the same hostname, regardless of IP
+    sudo sed -i "/[[:space:]]$hostname$/d" /etc/hosts
+
+    # Add the new entry, ensuring it's added before the IPv6 section
+    sudo sed -i "/^# The following lines are desirable for IPv6 capable hosts/i\\$ip $hostname" /etc/hosts
 }
 
 # Add control machine and node IPs to /etc/hosts
@@ -76,8 +77,6 @@ for i in "${!WORKER_IPS[@]}"; do
     WORKER_IP=${WORKER_IPS[i]}
     add_to_hosts "$WORKER_IP" "worker$((i+1))"
 done
-
-ansible-galaxy install lablabs.rke2 --force
 
 # Create an Ansible hosts file with master and worker configurations
 cat > hosts <<EOF
