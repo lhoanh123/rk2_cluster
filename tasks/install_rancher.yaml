@@ -1,6 +1,5 @@
 ---
 - name: Install Rancher and cert-manager using Helm
-  become: yes
   tasks:
     - name: Create a bash script for Helm installation
       copy:
