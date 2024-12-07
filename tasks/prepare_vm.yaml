@@ -1,6 +1,4 @@
 - name: Prepare VMs for RKE2
-  hosts: k8s_cluster
-  become: yes
   tasks:
     - name: Stop and disable UFW
       systemd:
