@@ -32,9 +32,7 @@
         rke2_loadbalancer_ip_range: "{{ rke2_loadbalancer_range }}"
 
     - name: Run post-install tasks on master nodes
-      when: inventory_hostname in groups['masters']
       include_tasks: tasks/post_install.yaml
 
     - name: Install Rancher on master1
-      when: inventory_hostname == 'master1'
       include_tasks: tasks/install_rancher.yaml
