@@ -1,6 +1,5 @@
 ---
 - name: Install Rancher and cert-manager using Helm
-  hosts: master1
   become: yes
   tasks:
     - name: Create a bash script for Helm installation
