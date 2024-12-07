@@ -107,7 +107,7 @@ EOF
 # Run the single playbook with all the required variables
 ansible-playbook -i hosts site.yaml \
     --extra-vars "rke2_cni=$RKE2_CNI rke2_version=$RKE2_VERSION rke2_token=$RKE2_TOKEN rke2_mode=$RKE2_MODE api_ip=$API_IP rke2_loadbalancer_ip_range=range-global:$RKE2_LOADBALANCER_RANGE" \
-    --ask-becom-pass
+    --ask-become-pass
 # # Prompt for the 'become' password (sudo access)
 # echo "Please enter the become password:"
 # read -s BECOME_PASS
