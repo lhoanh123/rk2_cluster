@@ -18,20 +18,20 @@ fi
 
 # Write configuration for Helm chart
 mkdir -p /var/lib/rancher/rke2/server/manifests
-touch /var/lib/rancher/rke2/server/manifests/rke2-ingress-nginx-config.yaml
-
-echo "apiVersion: helm.cattle.io/v1
+cat <<EOF > /var/lib/rancher/rke2/server/manifests/rke2-ingress-nginx-config.yaml
+apiVersion: helm.cattle.io/v1
 kind: HelmChartConfig
 metadata:
   name: rke2-ingress-nginx
   namespace: kube-system
 spec:
-  valuesContent: |-
+  valuesContent: |
     controller:
       config:
         use-forwarded-headers: true
       extraArgs:
-        enable-ssl-passthrough: true" > /var/lib/rancher/rke2/server/manifests/rke2-ingress-nginx-config.yaml
+        enable-ssl-passthrough: true
+EOF
 
 # Symlink kubectl
 KUBECTL_PATH=$(find /var/lib/rancher/rke2/data/ -name kubectl 2>/dev/null)
