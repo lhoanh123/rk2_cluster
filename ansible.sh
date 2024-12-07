@@ -106,34 +106,36 @@ masters
 workers
 EOF
 
-# Prompt for the 'become' password (sudo access)
-echo "Please enter the become password:"
-read -s BECOME_PASS
+ansible-playbook -i hosts site.yaml --ask-become-pass
 
-# Set the ANSIBLE_BECOME_PASS environment variable for Ansible
-export ANSIBLE_BECOME_PASS=$BECOME_PASS
+# # Prompt for the 'become' password (sudo access)
+# echo "Please enter the become password:"
+# read -s BECOME_PASS
 
-# Deploy RKE2 based on the mode (normal or ha)
-if [[ $RKE2_MODE == "normal" && ${#MASTER_IPS[@]} -eq 1 && ${#WORKER_IPS[@]} -ge 1 ]]; then
-    ansible-playbook -i hosts tasks/prepare_vm.yaml
-    # Normal mode: one master and one or more workers
-    ansible-playbook -i hosts tasks/deploy_rke2.yaml \
-        --extra-vars "rke2_cni=$RKE2_CNI rke2_version=$RKE2_VERSION rke2_token=$RKE2_TOKEN"
-elif [[ $RKE2_MODE == "ha" && ${#MASTER_IPS[@]} -gt 1 && ${#WORKER_IPS[@]} -ge 1 ]]; then
-    # HA mode: multiple masters and one or more workers
-    if [[ -z $API_IP || -z $RKE2_LOADBALANCER_RANGE ]]; then
-        echo "In HA mode, API_IP and RKE2_LOADBALANCER_RANGE must be set. Exiting."
-        exit 1
-    fi
-    # Run the Ansible playbooks for setup and deployment
-    ansible-playbook -i hosts tasks/prepare_vm.yaml --extra-vars "api_ip=$API_IP"
-    ansible-playbook -i hosts tasks/deploy_rke2_ha.yaml \
-        --extra-vars "rke2_cni=$RKE2_CNI rke2_version=$RKE2_VERSION rke2_token=$RKE2_TOKEN rke2_api_ip=$API_IP rke2_loadbalancer_ip_range=range-global:$RKE2_LOADBALANCER_RANGE"
-else
-    echo "Invalid configuration: Please check RKE2_MODE, MASTER_IPS, and WORKER_IPS."
-    exit 1
-fi
+# # Set the ANSIBLE_BECOME_PASS environment variable for Ansible
+# export ANSIBLE_BECOME_PASS=$BECOME_PASS
 
-# Run post-install and Rancher installation playbooks
-ansible-playbook -i hosts tasks/post_install.yaml
-ansible-playbook -i hosts tasks/install_rancher.yaml
+# # Deploy RKE2 based on the mode (normal or ha)
+# if [[ $RKE2_MODE == "normal" && ${#MASTER_IPS[@]} -eq 1 && ${#WORKER_IPS[@]} -ge 1 ]]; then
+#     ansible-playbook -i hosts tasks/prepare_vm.yaml
+#     # Normal mode: one master and one or more workers
+#     ansible-playbook -i hosts tasks/deploy_rke2.yaml \
+#         --extra-vars "rke2_cni=$RKE2_CNI rke2_version=$RKE2_VERSION rke2_token=$RKE2_TOKEN"
+# elif [[ $RKE2_MODE == "ha" && ${#MASTER_IPS[@]} -gt 1 && ${#WORKER_IPS[@]} -ge 1 ]]; then
+#     # HA mode: multiple masters and one or more workers
+#     if [[ -z $API_IP || -z $RKE2_LOADBALANCER_RANGE ]]; then
+#         echo "In HA mode, API_IP and RKE2_LOADBALANCER_RANGE must be set. Exiting."
+#         exit 1
+#     fi
+#     # Run the Ansible playbooks for setup and deployment
+#     ansible-playbook -i hosts tasks/prepare_vm.yaml --extra-vars "api_ip=$API_IP"
+#     ansible-playbook -i hosts tasks/deploy_rke2_ha.yaml \
+#         --extra-vars "rke2_cni=$RKE2_CNI rke2_version=$RKE2_VERSION rke2_token=$RKE2_TOKEN rke2_api_ip=$API_IP rke2_loadbalancer_ip_range=range-global:$RKE2_LOADBALANCER_RANGE"
+# else
+#     echo "Invalid configuration: Please check RKE2_MODE, MASTER_IPS, and WORKER_IPS."
+#     exit 1
+# fi
+
+# # Run post-install and Rancher installation playbooks
+# ansible-playbook -i hosts tasks/post_install.yaml
+# ansible-playbook -i hosts tasks/install_rancher.yaml

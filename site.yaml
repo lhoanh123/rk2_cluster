@@ -1,0 +1,49 @@
+---
+- name: Deploy RKE2 cluster
+  hosts: k8s_cluster
+  become: yes
+  tasks:
+    - name: Prepare VM and deploy RKE2 in normal mode
+      include_tasks: tasks/prepare_vm.yaml
+      when: rke2_mode == "normal" and master_ips | length == 1 and worker_ips | length >= 1
+
+    - name: Deploy RKE2 in normal mode
+      include_tasks: tasks/deploy_rke2.yaml
+      vars:
+        rke2_cni: "{{ rke2_cni }}"
+        rke2_version: "{{ rke2_version }}"
+        rke2_token: "{{ rke2_token }}"
+      when: rke2_mode == "normal" and master_ips | length == 1 and worker_ips | length >= 1
+
+    - name: Check HA mode requirements
+      fail:
+        msg: "In HA mode, API_IP and RKE2_LOADBALANCER_RANGE must be set."
+      when: rke2_mode == "ha" and (api_ip is not defined or rke2_loadbalancer_range is not defined)
+
+    - name: Prepare VM for HA mode
+      include_tasks: tasks/prepare_vm.yaml
+      vars:
+        api_ip: "{{ api_ip }}"
+      when: rke2_mode == "ha" and master_ips | length > 1 and worker_ips | length >= 1
+
+    - name: Deploy RKE2 in HA mode
+      include_tasks: tasks/deploy_rke2_ha.yaml
+      vars:
+        rke2_cni: "{{ rke2_cni }}"
+        rke2_version: "{{ rke2_version }}"
+        rke2_token: "{{ rke2_token }}"
+        rke2_api_ip: "{{ api_ip }}"
+        rke2_loadbalancer_ip_range: "range-global:{{ rke2_loadbalancer_range }}"
+      when: rke2_mode == "ha" and master_ips | length > 1 and worker_ips | length >= 1
+
+    - name: Fail if the configuration is invalid
+      fail:
+        msg: "Invalid configuration: Please check RKE2_MODE, MASTER_IPS, and WORKER_IPS."
+      when: not ((rke2_mode == "normal" and master_ips | length == 1 and worker_ips | length >= 1) or
+                 (rke2_mode == "ha" and master_ips | length > 1 and worker_ips | length >= 1))
+
+    - name: Run post-install tasks
+      include_tasks: tasks/post_install.yaml
+
+    - name: Install Rancher
+      include_tasks: tasks/install_rancher.yaml
