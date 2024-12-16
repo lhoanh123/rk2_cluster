@@ -4,10 +4,6 @@
 export LONGHORN_NAMESPACE="longhorn-system"
 export INGRESS_HOST="longhorn.mylab.com"
 
-# Install open-iscsi
-echo "Installing open-iscsi..."
-sudo apt-get install open-iscsi -y
-
 # Add and update the Helm repository
 echo "Adding Longhorn Helm repository..."
 helm repo add longhorn https://charts.longhorn.io
