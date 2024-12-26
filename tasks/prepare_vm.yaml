@@ -44,20 +44,36 @@
     - name: Update package lists
       apt:
         update_cache: yes
+      register: update_result
+      retries: 3
+      delay: 10
+      until: update_result is successful
 
     - name: Install nfs-common
       apt:
         name: nfs-common
         state: present
+      register: install_nfs_result
+      retries: 3
+      delay: 10
+      until: install_nfs_result is successful
 
     - name: Upgrade packages
       apt:
         upgrade: dist
         state: latest
+      register: upgrade_result
+      retries: 3
+      delay: 10
+      until: upgrade_result is successful
 
     - name: Autoremove unnecessary packages
       apt:
         autoremove: yes
+      register: autoremove_result
+      retries: 3
+      delay: 10
+      until: autoremove_result is successful
 
     - name: Add API IP with hostname lb to /etc/hosts (only in HA mode)
       lineinfile:
@@ -86,9 +102,17 @@
       apt:
         name: open-iscsi
         state: present
+      register: install_iscsi_result
+      retries: 3
+      delay: 10
+      until: install_iscsi_result is successful
 
     - name: Reboot the server to apply changes
       reboot:
         msg: "Rebooting to apply changes"
         connect_timeout: 5
       when: inventory_hostname in groups['masters'] + groups['workers']
+      register: reboot_result
+      retries: 3
+      delay: 10
+      until: reboot_result is successful
