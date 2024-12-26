@@ -46,7 +46,11 @@
             --set replicas="{{ replicas }}"
 
           echo "Installation completed."
-      mode: '0755'
+    
+    - name: Set correct permissions on install_rancher.sh
+      file:
+        path: /tmp/install_rancher.sh
+        mode: '0755'
 
     - name: Run the Rancher installation script
       command: /tmp/install_rancher.sh

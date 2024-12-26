@@ -1,6 +1,7 @@
 ---
 - name: Deploy Longhorn using Bash Script
-  hosts: localhost
+  hosts: masters
+  become: true
   tasks:
     - name: Set Variables
       set_fact:

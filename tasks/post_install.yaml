@@ -55,7 +55,10 @@
           echo "export KUBECONFIG=/etc/rancher/rke2/rke2.yaml" >> ~/.bashrc
           source ~/.bashrc
 
-      mode: '0755'
+    - name: Set correct permissions on post_install.sh
+      file:
+        path: /tmp/post_install.sh
+        mode: '0755'
 
     - name: Execute post_install.sh
       command: /tmp/post_install.sh
