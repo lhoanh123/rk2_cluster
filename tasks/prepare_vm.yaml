@@ -98,7 +98,7 @@
         name: "{{ inventory_hostname }}"
       when: inventory_hostname in groups['masters'] + groups['workers']
 
-    - name: Install open-iscsi (only on workers)
+    - name: Install open-iscsi 
       apt:
         name: open-iscsi
         state: present
