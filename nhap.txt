@@ -1,9 +1,0 @@
-export USERNAME=ubuntu
-export ANSIBLE_HOST_IP=192.168.198.129
-export MASTER_IPS="192.168.198.141"
-export WORKER_IPS="192.168.198.132 192.168.198.133"
-export RKE2_MODE=normal
-export RKE2_VERSION=v1.30.6+rke2r1
-export RKE2_CNI=canal
-export RKE2_TOKEN="yourSecureToken123"
-./ansible.sh

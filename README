@@ -18,6 +18,11 @@ III. Tùy chọn, ghi đè các biến qua dòng lệnh:
         RKE2_VERSION=v1.30.6+rke2r1 \
         RKE2_CNI=canal \
         RKE2_TOKEN="yourSecureToken123" \
+        RANCHER_HOSTNAME="rancher.mylab.com" \
+        RANCHER_BOOTSTRAP_PASSWORD="admin" \
+        RANCHER_REPLICAS=1 \
+        LONGHORN_HOSTNAME="longhorn.mylab.com" \
+        LONGHORN_REPLICAS=1 \
         ./ansible.sh
         
 2. Chế độ High Availability (HA) (Nhiều Master và 1 hoặc nhiều Worker):
@@ -31,6 +36,11 @@ III. Tùy chọn, ghi đè các biến qua dòng lệnh:
         RKE2_CNI=canal \
         RKE2_TOKEN="yourSecureToken123" \
         RKE2_LOADBALANCER_RANGE="192.168.198.10-192.168.198.110" \
+        RANCHER_HOSTNAME="rancher.mylab.com" \
+        RANCHER_BOOTSTRAP_PASSWORD="admin" \
+        RANCHER_REPLICAS=1 \
+        LONGHORN_HOSTNAME="longhorn.mylab.com" \
+        LONGHORN_REPLICAS=1 \
         ./ansible.sh
 
 Giải thích các biến môi trường:
@@ -53,6 +63,16 @@ Có thể chọn:
 
 - RKE2_CNI (Mặc định: canal): Plugin Container Network Interface (CNI) sử dụng cho mạng trong cluster RKE2 của bạn. canal là mặc định, nhưng bạn có thể chọn các CNI khác hỗ trợ bởi RKE2, ví dụ flannel hoặc calico.
 
-- RKE2_TOKEN (Mặc định: "yourSecureToken123"): Token RKE2 được sử dụng để xác thực giữa các node trong cluster. Thay thế token này bằng token bảo mật của bạn để đảm bảo việc giao tiếp giữa các node.
+- RKE2_TOKEN : Token RKE2 được sử dụng để xác thực giữa các node trong cluster. Thay thế token này bằng token bảo mật của bạn để đảm bảo việc giao tiếp giữa các node.
 
 - RKE2_LOADBALANCER_RANGE (Yêu cầu trong chế độ HA): Dải IP cho load balancer trong chế độ HA. Ví dụ: 192.168.198.200-192.168.198.220.
+
+- RANCHER_HOSTNAME: Địa chỉ hostname của Rancher (mặc định là rancher.mylab.com).
+
+- RANCHER_BOOTSTRAP_PASSWORDBOOTSTRAP_PASSWORD: Mật khẩu bootstrap cho Rancher (mặc định là admin).
+
+- RANCHER_REPLICAS (Mặc định: 1): Số lượng bản sao của Rancher được triển khai.
+
+- LONGHORN_HOSTNAME (Mặc định: longhorn.mylab.com): Địa chỉ hostname của Longhorn.
+
+- LONGHORN_REPLICAS (Mặc định: 1): Số lượng bản sao của Longhorn.

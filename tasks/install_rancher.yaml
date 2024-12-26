@@ -1,0 +1,54 @@
+---
+- name: Install Rancher on master1
+  hosts: master1
+  become: true
+
+  vars:
+    hostname: "{{ hostname }}"
+    bootstrapPassword: "{{ bootstrapPassword }}"
+    replicas: "{{ replicas }}"
+
+  tasks:
+    - name: Ensure install_rancher.sh script exists on target node
+      copy:
+        dest: /tmp/install_rancher.sh
+        content: |
+          #!/bin/bash
+
+          # Set environment variables
+          export HOSTNAME="{{ hostname }}"
+          export BOOTSTRAP_PASSWORD="{{ bootstrapPassword }}"
+
+          # Add the Rancher and Jetstack Helm repositories
+          echo "Adding Rancher and Jetstack Helm repositories..."
+          helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
+          helm repo add jetstack https://charts.jetstack.io
+
+          # Update Helm repositories
+          echo "Updating Helm repositories..."
+          helm repo update
+
+          # Add the cert-manager CRD
+          echo "Applying cert-manager CRD..."
+          kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.16.2/cert-manager.crds.yaml
+
+          # Install or upgrade cert-manager
+          echo "Installing or upgrading cert-manager..."
+          helm upgrade -i cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace
+
+          # Install or upgrade Rancher
+          echo "Installing or upgrading Rancher..."
+          helm upgrade -i rancher rancher-latest/rancher \
+            --create-namespace \
+            --namespace cattle-system \
+            --set hostname="${HOSTNAME}" \
+            --set bootstrapPassword="${BOOTSTRAP_PASSWORD}" \
+            --set replicas="{{ replicas }}"
+
+          echo "Installation completed."
+      mode: '0755'
+
+    - name: Run the Rancher installation script
+      command: /tmp/install_rancher.sh
+      args:
+        chdir: /tmp

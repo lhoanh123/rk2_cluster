@@ -9,6 +9,11 @@
 : "${API_IP:=}"                        # Default API IP (empty for normal mode)
 : "${RKE2_CNI:=canal}"                 # Default CNI (Container Network Interface)
 : "${RKE2_LOADBALANCER_RANGE:=}"       # Default load balancer IP range
+: "${RANCHER_HOSTNAME:=rancher.mylab.com}"  # Default Rancher hostname
+: "${RANCHER_BOOTSTRAP_PASSWORD:=admin}"       # Default Rancher bootstrap password
+: "${RANCHER_REPLICAS:=1}"                    # Default number of Rancher replicas
+: "${LONGHORN_HOSTNAME:=longhorn.mylab.com}"  # Default LONGHORN hostname
+: "${LONGHORN_REPLICAS:=1}"                    # Default number of LONGHORN replicas
 
 # Arrays of IPs for masters and workers
 MASTER_IPS=(${MASTER_IPS:-192.168.198.141})
@@ -114,9 +119,21 @@ export ANSIBLE_BECOME_PASS=$BECOME_PASS
 # Deploy RKE2 based on the mode (normal or ha)
 if [[ $RKE2_MODE == "normal" && ${#MASTER_IPS[@]} -eq 1 && ${#WORKER_IPS[@]} -ge 1 ]]; then
     ansible-playbook -i hosts tasks/prepare_vm.yaml
+
     # Normal mode: one master and one or more workers
     ansible-playbook -i hosts tasks/deploy_rke2.yaml \
         --extra-vars "rke2_cni=$RKE2_CNI rke2_version=$RKE2_VERSION rke2_token=$RKE2_TOKEN"
+
+    # Run the post_install.yaml playbook for additional setup on master nodes
+    ansible-playbook -i hosts tasks/post_install.yaml
+
+    # Run the install_rancher.yaml playbook with extra variables for Rancher installation
+    ansible-playbook -i hosts tasks/install_rancher.yaml \
+        --extra-vars "hostname=$RANCHER_HOSTNAME bootstrapPassword=$RANCHER_BOOTSTRAP_PASSWORD replicas=$RANCHER_REPLICAS"
+    
+    ansible-playbook -i hosts tasks/install_longhorn.yaml \
+        --extra-vars "ingress_host=$LONGHORN_HOSTNAME replica_count=$LONGHORN_REPLICAS"
+        
 elif [[ $RKE2_MODE == "ha" && ${#MASTER_IPS[@]} -gt 1 && ${#WORKER_IPS[@]} -ge 1 ]]; then
     # HA mode: multiple masters and one or more workers
     if [[ -z $API_IP || -z $RKE2_LOADBALANCER_RANGE ]]; then
@@ -127,7 +144,18 @@ elif [[ $RKE2_MODE == "ha" && ${#MASTER_IPS[@]} -gt 1 && ${#WORKER_IPS[@]} -ge 1
     ansible-playbook -i hosts tasks/prepare_vm.yaml --extra-vars "api_ip=$API_IP"
     ansible-playbook -i hosts tasks/deploy_rke2_ha.yaml \
         --extra-vars "rke2_cni=$RKE2_CNI rke2_version=$RKE2_VERSION rke2_token=$RKE2_TOKEN rke2_api_ip=$API_IP rke2_loadbalancer_ip_range=range-global:$RKE2_LOADBALANCER_RANGE"
+    
+    # Run the post_install.yaml playbook for additional setup on master nodes
+    ansible-playbook -i hosts tasks/post_install.yaml
+
+    # Run the install_rancher.yaml playbook with extra variables for Rancher installation
+    ansible-playbook -i hosts tasks/install_rancher.yaml \
+        --extra-vars "hostname=$RANCHER_HOSTNAME bootstrapPassword=$RANCHER_BOOTSTRAP_PASSWORD replicas=$RANCHER_REPLICAS"
+    
+    ansible-playbook -i hosts tasks/install_longhorn.yaml \
+        --extra-vars "ingress_host=$LONGHORN_HOSTNAME replica_count=$LONGHORN_REPLICAS"
 else
     echo "Invalid configuration: Please check RKE2_MODE, MASTER_IPS, and WORKER_IPS."
     exit 1
 fi
+
