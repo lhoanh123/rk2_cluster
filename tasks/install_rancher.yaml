@@ -52,7 +52,10 @@
         path: /tmp/install_rancher.sh
         mode: '0755'
 
-    - name: Run the Rancher installation script
+    - name: Execute install_rancher.sh
       command: /tmp/install_rancher.sh
-      args:
-        chdir: /tmp
+
+    - name: Cleanup install_rancher.sh
+      file:
+        path: /tmp/install_rancher.sh
+        state: absent

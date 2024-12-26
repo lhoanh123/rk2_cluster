@@ -2,43 +2,53 @@
 - name: Deploy Longhorn using Bash Script
   hosts: masters
   become: true
-  tasks:
-    - name: Set Variables
-      set_fact:
-        longhorn_namespace: "longhorn-system"
-        ingress_host: "{{ ingress_host }}"
-        replica_count: "{{ replica_count }}"
-
-    - name: Execute Bash Script
-      shell: |
-        export LONGHORN_NAMESPACE="{{ longhorn_namespace }}"
-        export INGRESS_HOST="{{ ingress_host }}"
-        echo "Adding Longhorn Helm repository..."
-        helm repo add longhorn https://charts.longhorn.io
-        helm repo update
-
-        echo "Creating Longhorn namespace..."
-        kubectl create namespace {{ longhorn_namespace }}
-
-        echo "Installing Longhorn with custom settings..."
-        helm upgrade -i longhorn longhorn/longhorn --namespace {{ longhorn_namespace }} \
-          --set ingress.enabled=true \
-          --set ingress.host={{ ingress_host }} \
-          --set settings.orphanDataCleanup=true \
-          --set settings.deletionConfirmation=true \
-          --set persistence.defaultStorageClass.retainPolicy="Delete" \
-          --set persistence.defaultStorageClass.replicaCount={{ replica_count }} \
-          --set persistence.defaultStorageClass.dataLocality="Best-Effort"
-
-        echo "Waiting for the Longhorn deployment to complete..."
-        sleep 30
-
-        echo "Verifying Longhorn pod status..."
-        kubectl get pods --namespace {{ longhorn_namespace }}
-      args:
-        executable: /bin/bash
 
   vars:
-    ingress_host: "{{ ingress_host | default('longhorn.mylab.com') }}"
-    replica_count: 1  # Set default value, can be overridden when running the playbook
+    longhorn_namespace: "longhorn-system"
+    ingress_host: "{{ ingress_host }}"
+    replica_count: "{{ replica_count }}"
+
+  tasks:
+    - name: Execute Bash Script
+      copy:
+        dest: /tmp/install_longhorn.sh
+        content: |
+          #!/bin/bash
+          export LONGHORN_NAMESPACE="{{ longhorn_namespace }}"
+          export INGRESS_HOST="{{ ingress_host }}"
+          echo "Adding Longhorn Helm repository..."
+          helm repo add longhorn https://charts.longhorn.io
+          helm repo update
+
+          echo "Creating Longhorn namespace..."
+          kubectl create namespace {{ longhorn_namespace }}
+
+          echo "Installing Longhorn with custom settings..."
+          helm upgrade -i longhorn longhorn/longhorn --namespace {{ longhorn_namespace }} \
+            --set ingress.enabled=true \
+            --set ingress.host={{ ingress_host }} \
+            --set settings.orphanDataCleanup=true \
+            --set settings.deletionConfirmation=true \
+            --set persistence.defaultStorageClass.retainPolicy="Delete" \
+            --set persistence.defaultStorageClass.replicaCount={{ replica_count }} \
+            --set persistence.defaultStorageClass.dataLocality="Best-Effort"
+
+          echo "Waiting for the Longhorn deployment to complete..."
+          sleep 30
+
+          echo "Verifying Longhorn pod status..."
+          kubectl get pods --namespace {{ longhorn_namespace }}
+
+    - name: Set correct permissions on install_longhorn.sh
+      file:
+        path: /tmp/install_longhorn.sh
+        mode: '0755'
+
+    - name: Execute install_longhorn.sh
+      command: /tmp/install_longhorn.sh
+
+    - name: Cleanup install_longhorn.sh
+      file:
+        path: /tmp/install_longhorn.sh
+        state: absent
 
