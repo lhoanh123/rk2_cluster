@@ -4,7 +4,10 @@ I. Yêu Cầu Trước Khi Thực Hiện:
 - Cài đặt Ansible trên máy điều khiển (control machine).
 - Truy cập SSH được cấu hình trên tất cả các node (master và worker) với cùng một tài khoản người dùng.
 - Mỗi node phải có ít nhất 4G RAM, 2 CPU, 80G ổ cứng để quá trình cài đặt diễn ra thuận tiện nhất.
-
+- Đổi hostname cho máy ansible: 
+    sudo hostnamectl set-hostname ansible
+    exec bash
+    
 II. Làm cho Script có thể thực thi:
     sudo chmod +x ansible.sh
 
