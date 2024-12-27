@@ -19,6 +19,17 @@
 MASTER_IPS=(${MASTER_IPS:-192.168.198.141})
 WORKER_IPS=(${WORKER_IPS:-192.168.198.132})
 
+# Check and change the hostname if not already set to "ansible"
+current_hostname=$(hostnamectl --static)
+if [[ "$current_hostname" != "ansible" ]]; then
+    echo "Changing hostname to 'ansible'..."
+    sudo hostnamectl set-hostname ansible
+    echo "Hostname changed to 'ansible'. Restarting the shell to reflect changes..."
+    exec bash
+else
+    echo "Hostname is already set to 'ansible'."
+fi
+
 # Prepare Ansible machine
 sudo apt update
 sudo apt install ansible -y
