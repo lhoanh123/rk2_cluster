@@ -3,7 +3,7 @@ Script này tự động hóa quá trình triển khai RKE2 trong chế độ b�
 I. Yêu Cầu Trước Khi Thực Hiện:
 - Cài đặt Ansible trên máy điều khiển (control machine).
 - Truy cập SSH được cấu hình trên tất cả các node (master và worker) với cùng một tài khoản người dùng.
-- Mỗi node phải có ít nhất 4G RAM và 2 CPU để quá trình cài đặt diễn ra thuận tiện nhất.
+- Mỗi node phải có ít nhất 4G RAM, 2 CPU, 80G ổ cứng để quá trình cài đặt diễn ra thuận tiện nhất.
 
 II. Làm cho Script có thể thực thi:
     sudo chmod +x ansible.sh
@@ -56,7 +56,7 @@ Giải thích các biến môi trường:
 Có thể chọn:
     normal: Cài đặt với một node master và một hoặc nhiều node worker.
     ha: Cài đặt High Availability (HA) với nhiều node master và một hoặc nhiều node worker.
-    
+
 - RKE2_CNI (Mặc định: canal): Plugin Container Network Interface (CNI) sử dụng cho mạng trong cluster RKE2 của bạn. canal là mặc định, nhưng bạn có thể chọn các CNI khác hỗ trợ bởi RKE2, ví dụ flannel hoặc calico.
 
 - RKE2_TOKEN : Token RKE2 được sử dụng để xác thực giữa các node trong cluster. Thay thế token này bằng token bảo mật của bạn để đảm bảo việc giao tiếp giữa các node.
