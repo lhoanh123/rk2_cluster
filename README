@@ -15,7 +15,6 @@ III. Tùy chọn, ghi đè các biến qua dòng lệnh:
         MASTER_IPS="192.168.198.141" \
         WORKER_IPS="192.168.198.132 192.168.198.133" \
         RKE2_MODE=normal \
-        RKE2_VERSION=v1.31.4+rke2r1 \
         RKE2_CNI=canal \
         RKE2_TOKEN="yourSecureToken123" \
         RANCHER_HOSTNAME="rancher.mylab.com" \
@@ -32,7 +31,6 @@ III. Tùy chọn, ghi đè các biến qua dòng lệnh:
         WORKER_IPS="192.168.198.132" \
         API_IP=192.168.198.100 \
         RKE2_MODE=ha \
-        RKE2_VERSION=v1.31.4+rke2r1 \
         RKE2_CNI=canal \
         RKE2_TOKEN="yourSecureToken123" \
         RKE2_LOADBALANCER_RANGE="192.168.198.10-192.168.198.110" \
@@ -58,9 +56,7 @@ Giải thích các biến môi trường:
 Có thể chọn:
     normal: Cài đặt với một node master và một hoặc nhiều node worker.
     ha: Cài đặt High Availability (HA) với nhiều node master và một hoặc nhiều node worker.
-
-- RKE2_VERSION (Mặc định: v1.31.4+rke2r1): Phiên bản của RKE2 sẽ được cài đặt trên các node. Đặt biến này thành phiên bản RKE2 mà bạn muốn triển khai.
-
+    
 - RKE2_CNI (Mặc định: canal): Plugin Container Network Interface (CNI) sử dụng cho mạng trong cluster RKE2 của bạn. canal là mặc định, nhưng bạn có thể chọn các CNI khác hỗ trợ bởi RKE2, ví dụ flannel hoặc calico.
 
 - RKE2_TOKEN : Token RKE2 được sử dụng để xác thực giữa các node trong cluster. Thay thế token này bằng token bảo mật của bạn để đảm bảo việc giao tiếp giữa các node.

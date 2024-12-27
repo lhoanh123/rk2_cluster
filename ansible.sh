@@ -109,6 +109,22 @@ masters
 workers
 EOF
 
+# Function to get the latest RKE2 version from GitHub
+get_latest_rke2_version() {
+    curl -s "https://api.github.com/repos/rancher/rke2/releases/latest" | \
+    grep '"tag_name":' | \
+    sed -E 's/.*"([^"]+)".*/\1/'
+}
+
+# Set the RKE2_VERSION dynamically
+RKE2_VERSION=$(get_latest_rke2_version)
+if [[ -z "$RKE2_VERSION" ]]; then
+    echo "Failed to fetch the latest RKE2 version. Using default version: v1.30.6+rke2r1"
+    RKE2_VERSION="v1.30.6+rke2r1"
+fi
+
+echo "Using RKE2 version: $RKE2_VERSION"
+
 # Prompt for the 'become' password (sudo access)
 echo "Please enter the become password:"
 read -s BECOME_PASS
