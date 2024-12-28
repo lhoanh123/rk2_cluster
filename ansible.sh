@@ -22,6 +22,7 @@ WORKER_IPS=(${WORKER_IPS:-192.168.198.132})
 # Prepare Ansible machine
 sudo apt update
 sudo apt install ansible -y
+sudo apt install curl -y
 ansible-galaxy install lablabs.rke2 --force
 
 # Check if SSH is installed; if not, install it
