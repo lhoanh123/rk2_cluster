@@ -166,7 +166,7 @@ elif [[ $RKE2_MODE == "ha" && ${#MASTER_IPS[@]} -gt 1 && ${#WORKER_IPS[@]} -ge 1
         --extra-vars "rke2_cni=$RKE2_CNI rke2_version=$RKE2_VERSION rke2_token=$RKE2_TOKEN rke2_api_ip=$API_IP rke2_loadbalancer_ip_range=range-global:$RKE2_LOADBALANCER_RANGE"
     
     # Run the post_install.yaml playbook for additional setup on master nodes
-    ansible-playbook -i hosts tasks/post_install.yaml --user=root
+    ansible-playbook -i hosts tasks/post_install.yaml --user=root --ask-become-pass
 
     # Run the install_rancher.yaml playbook with extra variables for Rancher installation
     ansible-playbook -i hosts tasks/install_rancher.yaml \

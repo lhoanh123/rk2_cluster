@@ -15,11 +15,10 @@ helm repo update
 
 # Add the cert-manager CRD
 echo "Applying cert-manager CRD..."
-kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.16.2/cert-manager.crds.yaml
 
 # Install or upgrade cert-manager
 echo "Installing or upgrading cert-manager..."
-helm upgrade -i cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace
+helm upgrade -i cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace --set crds.enabled=true
 
 # Install or upgrade Rancher
 echo "Installing or upgrading Rancher..."
