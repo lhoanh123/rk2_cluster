@@ -1,6 +1,6 @@
 ---
 - name: Install Rancher on master1
-  hosts: master1
+  hosts: masters
   become: true
 
   vars:

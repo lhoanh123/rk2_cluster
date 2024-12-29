@@ -1,6 +1,6 @@
 ---
 - name: Deploy Longhorn using Bash Script
-  hosts: master1
+  hosts: masters
   become: true
 
   vars:

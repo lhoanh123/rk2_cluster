@@ -24,6 +24,15 @@ helm upgrade -i longhorn longhorn/longhorn --namespace $LONGHORN_NAMESPACE \
   --set persistence.defaultStorageClass.replicaCount=1 \
   --set persistence.defaultStorageClass.dataLocality="Best-Effort"
 
+# helm upgrade -i longhorn longhorn/longhorn --namespace longhorn-system \
+#   --set ingress.enabled=true \
+#   --set ingress.host=longhorn.mylab.com \
+#   --set settings.orphanDataCleanup=true \
+#   --set settings.deletionConfirmation=true \
+#   --set persistence.defaultStorageClass.retainPolicy="Delete" \
+#   --set persistence.defaultStorageClass.replicaCount=1 \
+#   --set persistence.defaultStorageClass.dataLocality="Best-Effort"
+
 # Wait for the deployment to finish
 echo "Waiting for the Longhorn deployment to complete..."
 sleep 30
