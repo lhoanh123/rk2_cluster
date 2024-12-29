@@ -42,71 +42,18 @@
         state: present
 
     - name: Update package lists
-      block:
-        - name: Run apt update
-          apt:
-            update_cache: yes
-          register: update_result
-          retries: 3
-          delay: 10
-          until: update_result is successful
-      rescue:
-        - name: Reboot and retry apt update
-          reboot:
-            msg: "Rebooting to retry apt update"
-          register: reboot_result
-        - name: Retry apt update after reboot
-          apt:
-            update_cache: yes
-          retries: 3
-          delay: 10
-          until: update_result is successful
+      apt:
+        update_cache: yes
 
     - name: Install nfs-common
-      block:
-        - name: Run apt install nfs-common
-          apt:
-            name: nfs-common
-            state: present
-          register: install_nfs_result
-          retries: 3
-          delay: 10
-          until: install_nfs_result is successful
-      rescue:
-        - name: Reboot and retry apt install nfs-common
-          reboot:
-            msg: "Rebooting to retry apt install nfs-common"
-          register: reboot_result
-        - name: Retry apt install nfs-common after reboot
-          apt:
-            name: nfs-common
-            state: present
-          retries: 3
-          delay: 10
-          until: install_nfs_result is successful
+      apt:
+        name: nfs-common
+        state: present
 
     - name: Upgrade packages
-      block:
-        - name: Run apt upgrade
-          apt:
-            upgrade: dist
-            state: latest
-          register: upgrade_result
-          retries: 3
-          delay: 10
-          until: upgrade_result is successful
-      rescue:
-        - name: Reboot and retry apt upgrade
-          reboot:
-            msg: "Rebooting to retry apt upgrade"
-          register: reboot_result
-        - name: Retry apt upgrade after reboot
-          apt:
-            upgrade: dist
-            state: latest
-          retries: 3
-          delay: 10
-          until: upgrade_result is successful
+      apt:
+        upgrade: dist
+        state: latest
 
     - name: Autoremove unnecessary packages
       apt:
@@ -135,28 +82,11 @@
         name: "{{ inventory_hostname }}"
       when: inventory_hostname in groups['masters'] + groups['workers']
 
-    - name: Install open-iscsi
-      block:
-        - name: Run apt install open-iscsi
-          apt:
-            name: open-iscsi
-            state: present
-          register: install_iscsi_result
-          retries: 3
-          delay: 10
-          until: install_iscsi_result is successful
-      rescue:
-        - name: Reboot and retry apt install open-iscsi
-          reboot:
-            msg: "Rebooting to retry apt install open-iscsi"
-          register: reboot_result
-        - name: Retry apt install open-iscsi after reboot
-          apt:
-            name: open-iscsi
-            state: present
-          retries: 3
-          delay: 10
-          until: install_iscsi_result is successful
+    - name: Install open-iscsi (only on workers)
+      apt:
+        name: open-iscsi
+        state: present
+      when: inventory_hostname in groups['workers']
 
     - name: Reboot the server to apply changes
       reboot:
