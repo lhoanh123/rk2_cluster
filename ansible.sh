@@ -1,14 +1,17 @@
 #!/bin/bash
 
 # Default values for variables
-: "${USERNAME:=ubuntu}"                # SSH username
-: "${ANSIBLE_HOST_IP:=192.168.198.129}" # Control machine IP
-: "${RKE2_VERSION:=v1.30.6+rke2r1}"     # Default RKE2 version
-: "${RKE2_MODE:=normal}"               # Default mode (normal or ha)
-: "${RKE2_TOKEN:=yourSecureToken123}"  # Default RKE2 token
-: "${API_IP:=}"                        # Default API IP (empty for normal mode)
-: "${RKE2_CNI:=canal}"                 # Default CNI (Container Network Interface)
-: "${RKE2_LOADBALANCER_RANGE:=}"       # Default load balancer IP range
+: "${USERNAME:=ubuntu}"                     # SSH username
+: "${ANSIBLE_HOST_IP:=192.168.198.129}"     # Control machine IP
+: "${RKE2_VERSION:=v1.30.6+rke2r1}"         # Default RKE2 version
+: "${RKE2_MODE:=normal}"                    # Default mode (normal or ha)
+: "${RKE2_TOKEN:=yourSecureToken123}"       # Default RKE2 token
+: "${API_IP:=}"                             # Default API IP (empty for normal mode)
+: "${RKE2_CNI:=canal}"                      # Default CNI (Container Network Interface)
+: "${RKE2_LOADBALANCER_RANGE:=}"            # Default load balancer IP range
+: "${USE_KUBEVIP:=false}"                   # Default to keepalived, set to true for kubevip
+: "${RKE2_HA_MODE_KUBEVIP:=false}"          # Default HA mode kubevip (false)
+: "${RKE2_HA_MODE_KEEPALIVED:=true}"        # Default HA mode keepalived (true)
 
 # Arrays of IPs for masters and workers
 MASTER_IPS=(${MASTER_IPS:-192.168.198.141})
@@ -145,10 +148,20 @@ elif [[ $RKE2_MODE == "ha" && ${#MASTER_IPS[@]} -gt 1 && ${#WORKER_IPS[@]} -ge 1
         echo "In HA mode, API_IP and RKE2_LOADBALANCER_RANGE must be set. Exiting."
         exit 1
     fi
+
+    # Set kubevip or keepalived based on user input
+    if [[ "$USE_KUBEVIP" == "true" ]]; then
+        HA_MODE_KUBEVIP=true
+        HA_MODE_KEEPALIVED=false
+    else
+        HA_MODE_KUBEVIP=false
+        HA_MODE_KEEPALIVED=true
+    fi
+
     # Run the Ansible playbooks for setup and deployment
     ansible-playbook -i hosts tasks/prepare_vm.yaml --extra-vars "api_ip=$API_IP"
     ansible-playbook -i hosts tasks/deploy_rke2_ha.yaml \
-        --extra-vars "rke2_cni=$RKE2_CNI rke2_version=$RKE2_VERSION rke2_token=$RKE2_TOKEN rke2_api_ip=$API_IP rke2_loadbalancer_ip_range=range-global:$RKE2_LOADBALANCER_RANGE"
+        --extra-vars "rke2_cni=$RKE2_CNI rke2_version=$RKE2_VERSION rke2_token=$RKE2_TOKEN rke2_api_ip=$API_IP rke2_loadbalancer_ip_range=range-global:$RKE2_LOADBALANCER_RANGE rke2_ha_mode_kubevip=$HA_MODE_KUBEVIP rke2_ha_mode_keepalived=$HA_MODE_KEEPALIVED"
     
     # Run the post_install.yaml playbook for additional setup on master nodes
     ansible-playbook -i hosts tasks/post_install.yaml --user=root --ask-become-pass

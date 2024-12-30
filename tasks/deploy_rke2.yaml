@@ -5,5 +5,7 @@
     rke2_version: "{{ rke2_version }}"
     rke2_cni: ["{{ rke2_cni }}"] # or [cilium]
     rke2_token: "{{ rke2_token }}"
+    rke2_server_node_taints:
+      - 'CriticalAddonsOnly=true:NoExecute'
   roles:
      - role: lablabs.rke2

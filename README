@@ -34,6 +34,7 @@ III. Tùy chọn, ghi đè các biến qua dòng lệnh:
         RKE2_CNI=canal \
         RKE2_TOKEN="yourSecureToken123" \
         RKE2_LOADBALANCER_RANGE="192.168.198.10-192.168.198.110" \
+        USE_KUBEVIP=false \  
         ./ansible.sh
 
 Giải thích các biến môi trường:
@@ -57,3 +58,5 @@ Có thể chọn:
 - RKE2_TOKEN : Token RKE2 được sử dụng để xác thực giữa các node trong cluster. Thay thế token này bằng token bảo mật của bạn để đảm bảo việc giao tiếp giữa các node.
 
 - RKE2_LOADBALANCER_RANGE (Yêu cầu trong chế độ HA): Dải IP cho load balancer trong chế độ HA. Ví dụ: 192.168.198.200-192.168.198.220.
+
+- USE_KUBEVIP=false: Đặt biến môi trường này là true nếu bạn muốn sử dụng KubeVIP trong chế độ HA (High Availability). Nếu bạn đặt nó là false, Keepalived sẽ được sử dụng thay thế.

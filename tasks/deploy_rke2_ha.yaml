@@ -3,17 +3,20 @@
   become: yes
   vars:
     rke2_version: "{{ rke2_version }}"
-    rke2_cni: ["{{ rke2_cni }}"] # or [cilium]
+    rke2_cni: ["{{ rke2_cni }}"]  # or [cilium]
     rke2_token: "{{ rke2_token }}"
-    rke2_ha_mode: true
+    rke2_ha_mode: "{{ rke2_ha_mode | default(true) }}" 
+    rke2_ha_mode_kubevip: "{{ rke2_ha_mode_kubevip}"  
+    rke2_ha_mode_keepalived: "{{ rke2_ha_mode_keepalived}" 
     rke2_api_ip: "{{ rke2_api_ip }}"
     rke2_download_kubeconf: true
-    rke2_additional_sans:
-      - rke2.homelab.com
-      - "{{ rke2_api_ip }}"
+    rke2_additional_sans: 
+      # Dynamically fetch IP addresses of all master nodes
+      - "{{ hostvars[item]['ansible_host'] }}" for item in groups['masters']
+      - "{{ rke2_api_ip }}"  # If you're using a separate API IP
     rke2_loadbalancer_ip_range:
       range-global: "{{ rke2_loadbalancer_range }}"
     rke2_server_node_taints:
       - 'CriticalAddonsOnly=true:NoExecute'
   roles:
-     - role: lablabs.rke2
+    - role: lablabs.rke2
