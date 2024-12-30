@@ -34,7 +34,7 @@ III. Tùy chọn, ghi đè các biến qua dòng lệnh:
         RKE2_CNI=canal \
         RKE2_TOKEN="yourSecureToken123" \
         RKE2_LOADBALANCER_RANGE="192.168.198.10-192.168.198.110" \
-        USE_KUBEVIP=false \  
+        USE_KUBEVIP=false \
         ./ansible.sh
 
 Giải thích các biến môi trường:
