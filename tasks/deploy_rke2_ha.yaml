@@ -5,7 +5,7 @@
     rke2_version: "{{ rke2_version }}"
     rke2_cni: ["{{ rke2_cni }}"]  # or [cilium]
     rke2_token: "{{ rke2_token }}"
-    rke2_ha_mode: "{{ rke2_ha_mode | default(true) }}" 
+    rke2_ha_mode: true
     rke2_ha_mode_kubevip: "{{ rke2_ha_mode_kubevip}"  
     rke2_ha_mode_keepalived: "{{ rke2_ha_mode_keepalived}" 
     rke2_api_ip: "{{ rke2_api_ip }}"
