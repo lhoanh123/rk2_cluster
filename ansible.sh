@@ -128,6 +128,22 @@ echo "Using RKE2 version: $RKE2_VERSION"
 echo "Please enter the become password:"
 read -s BECOME_PASS
 
+# Print deploy_rke2.yaml with extra-vars
+if [[ $RKE2_MODE == "normal" ]]; then
+    echo "======== deploy_rke2.yaml with extra-vars ========"
+    ansible-playbook -i hosts tasks/deploy_rke2.yaml \
+        --extra-vars "rke2_cni=$RKE2_CNI rke2_version=$RKE2_VERSION rke2_token=$RKE2_TOKEN" --check --diff
+    echo "================================================="
+fi
+
+# Print deploy_rke2_ha.yaml with extra-vars
+if [[ $RKE2_MODE == "ha" ]]; then
+    echo "======== deploy_rke2_ha.yaml with extra-vars ========"
+    ansible-playbook -i hosts tasks/deploy_rke2_ha.yaml \
+        --extra-vars "rke2_cni=$RKE2_CNI rke2_version=$RKE2_VERSION rke2_token=$RKE2_TOKEN rke2_api_ip=$API_IP rke2_loadbalancer_ip_range=range-global:$RKE2_LOADBALANCER_RANGE rke2_ha_mode_kubevip=$HA_MODE_KUBEVIP rke2_ha_mode_keepalived=$HA_MODE_KEEPALIVED" --check --diff
+    echo "=================================================="
+fi
+
 # Set the ANSIBLE_BECOME_PASS environment variable for Ansible
 export ANSIBLE_BECOME_PASS=$BECOME_PASS
 
@@ -140,7 +156,7 @@ if [[ $RKE2_MODE == "normal" && ${#MASTER_IPS[@]} -eq 1 && ${#WORKER_IPS[@]} -ge
         --extra-vars "rke2_cni=$RKE2_CNI rke2_version=$RKE2_VERSION rke2_token=$RKE2_TOKEN"
 
     # Run the post_install.yaml playbook for additional setup on master nodes
-    ansible-playbook -i hosts tasks/post_install.yaml --user=root --ask-become-pass
+    ansible-playbook -i hosts tasks/post_install.yaml --user=root
         
 elif [[ $RKE2_MODE == "ha" && ${#MASTER_IPS[@]} -gt 1 && ${#WORKER_IPS[@]} -ge 1 ]]; then
     # HA mode: multiple masters and one or more workers
@@ -164,7 +180,7 @@ elif [[ $RKE2_MODE == "ha" && ${#MASTER_IPS[@]} -gt 1 && ${#WORKER_IPS[@]} -ge 1
         --extra-vars "rke2_cni=$RKE2_CNI rke2_version=$RKE2_VERSION rke2_token=$RKE2_TOKEN rke2_api_ip=$API_IP rke2_loadbalancer_ip_range=range-global:$RKE2_LOADBALANCER_RANGE rke2_ha_mode_kubevip=$HA_MODE_KUBEVIP rke2_ha_mode_keepalived=$HA_MODE_KEEPALIVED"
     
     # Run the post_install.yaml playbook for additional setup on master nodes
-    ansible-playbook -i hosts tasks/post_install.yaml --user=root --ask-become-pass
+    ansible-playbook -i hosts tasks/post_install.yaml --user=root
 
 else
     echo "Invalid configuration: Please check RKE2_MODE, MASTER_IPS, and WORKER_IPS."
