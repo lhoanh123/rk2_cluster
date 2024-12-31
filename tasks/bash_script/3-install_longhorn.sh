@@ -22,16 +22,32 @@ helm upgrade -i longhorn longhorn/longhorn --namespace $LONGHORN_NAMESPACE \
   --set settings.deletionConfirmation=true \
   --set persistence.defaultStorageClass.retainPolicy="Delete" \
   --set persistence.defaultStorageClass.replicaCount=1 \
-  --set persistence.defaultStorageClass.dataLocality="Best-Effort"
+  --set persistence.defaultStorageClass.dataLocality="Best-Effort" \
+  --set persistence.defaultClassReplicaCount=1 \
+  --set defaultSettings.replicaAutoBalance="least-effort" 
 
-# helm upgrade -i longhorn longhorn/longhorn --namespace longhorn-system \
+# helm upgrade -i longhorn longhorn/longhorn --namespace $LONGHORN_NAMESPACE \
 #   --set ingress.enabled=true \
-#   --set ingress.host=longhorn.mylab.com \
+#   --set ingress.host=$INGRESS_HOST \
 #   --set settings.orphanDataCleanup=true \
 #   --set settings.deletionConfirmation=true \
 #   --set persistence.defaultStorageClass.retainPolicy="Delete" \
 #   --set persistence.defaultStorageClass.replicaCount=1 \
-#   --set persistence.defaultStorageClass.dataLocality="Best-Effort"
+#   --set persistence.defaultStorageClass.dataLocality="Least-Effort" \
+#   --set csi.kubeletRootDir="/var/lib/kubelet" \
+#   --set defaultSettings.allowRecurringJobWhileVolumeDetached=true \
+#   --set defaultSettings.autoCleanupSystemGeneratedSnapshot=true \
+#   --set defaultSettings.createDefaultDiskLabeledNodes=true \
+#   --set defaultSettings.defaultDataPath="/var/lib/longhorn/" \
+#   --set defaultSettings.disableRevisionCounter=true \
+#   --set defaultSettings.mkfsExt4Parameters="-O ^64bit,^metadata_csum" \
+#   --set defaultSettings.replicaAutoBalance="least-effort" \
+#   --set defaultSettings.replicaSoftAntiAffinity=false \
+#   --set defaultSettings.replicaZoneSoftAntiAffinity=true \
+#   --set persistence.defaultClass=true \
+#   --set persistence.defaultClassReplicaCount=1 \
+#   --set persistence.defaultFsType="ext4" \
+#   --set persistence.reclaimPolicy="Delete"
 
 # Wait for the deployment to finish
 echo "Waiting for the Longhorn deployment to complete..."

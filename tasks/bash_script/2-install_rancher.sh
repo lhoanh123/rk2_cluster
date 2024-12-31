@@ -34,6 +34,6 @@ helm upgrade -i rancher rancher-latest/rancher \
 #   --namespace cattle-system \
 #   --set hostname=rancher.mylab.com \
 #   --set bootstrapPassword=admin \
-#   --set replicas=2
+#   --set replicas=1
 
 echo "Installation completed."

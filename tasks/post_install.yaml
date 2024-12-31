@@ -8,6 +8,9 @@
         dest: /tmp/post_install.sh
         content: |
           #!/bin/bash
+
+          sudo apt install git -y
+          
           # Check and install curl if it's not installed
           if ! command -v curl &> /dev/null; then
               echo "Installing curl..."
@@ -19,7 +22,7 @@
           # Install Helm if it's not installed
           if ! command -v helm &> /dev/null; then
               echo "Installing Helm..."
-              curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+              curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
           else
               echo "Helm is installed: $(helm version --short)"
           fi

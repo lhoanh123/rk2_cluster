@@ -128,22 +128,6 @@ echo "Using RKE2 version: $RKE2_VERSION"
 echo "Please enter the become password:"
 read -s BECOME_PASS
 
-# Print deploy_rke2.yaml with extra-vars
-if [[ $RKE2_MODE == "normal" ]]; then
-    echo "======== deploy_rke2.yaml with extra-vars ========"
-    ansible-playbook -i hosts tasks/deploy_rke2.yaml \
-        --extra-vars "rke2_cni=$RKE2_CNI rke2_version=$RKE2_VERSION rke2_token=$RKE2_TOKEN" --check --diff
-    echo "================================================="
-fi
-
-# Print deploy_rke2_ha.yaml with extra-vars
-if [[ $RKE2_MODE == "ha" ]]; then
-    echo "======== deploy_rke2_ha.yaml with extra-vars ========"
-    ansible-playbook -i hosts tasks/deploy_rke2_ha.yaml \
-        --extra-vars "rke2_cni=$RKE2_CNI rke2_version=$RKE2_VERSION rke2_token=$RKE2_TOKEN rke2_api_ip=$API_IP rke2_loadbalancer_ip_range=range-global:$RKE2_LOADBALANCER_RANGE rke2_ha_mode_kubevip=$HA_MODE_KUBEVIP rke2_ha_mode_keepalived=$HA_MODE_KEEPALIVED" --check --diff
-    echo "=================================================="
-fi
-
 # Set the ANSIBLE_BECOME_PASS environment variable for Ansible
 export ANSIBLE_BECOME_PASS=$BECOME_PASS
 

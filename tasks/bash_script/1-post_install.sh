@@ -1,5 +1,7 @@
 #!/bin/bash
 
+sudo apt install git -y
+
 # Check and install curl if it's not installed
 if ! command -v curl &> /dev/null; then
     echo "Installing curl..."
