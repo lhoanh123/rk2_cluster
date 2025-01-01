@@ -8,8 +8,9 @@
         dest: /tmp/post_install.sh
         content: |
           #!/bin/bash
+          sudo apt-get update
 
-          sudo apt install git python3-pip -y
+          sudo apt install python3-pip -y
           
           # Check and install curl if it's not installed
           if ! command -v curl &> /dev/null; then
