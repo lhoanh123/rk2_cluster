@@ -1,6 +1,8 @@
 #!/bin/bash
 
-sudo apt install git -y
+sudo apt-get update
+
+sudo apt install python3-pip -y
 
 # Check and install curl if it's not installed
 if ! command -v curl &> /dev/null; then

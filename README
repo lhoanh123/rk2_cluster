@@ -4,7 +4,10 @@ Có hỗ trợ thêm việc tải các tool liên quan trong thư mục "bash_sc
 
 I. Yêu Cầu Trước Khi Thực Hiện:
 - Cài đặt Ansible trên máy điều khiển (control machine).
-- Truy cập SSH được cấu hình trên tất cả các node (master và worker) với cùng một tài khoản người dùng.
+- Truy cập SSH được cấu hình trên tất cả các node (master và worker) với cùng một tài khoản người dùng:
+    sudo apt install -y openssh-server
+    sudo systemctl enable ssh
+    sudo systemctl start ssh
 - Mỗi node phải có ít nhất 4G RAM, 2 CPU, 80G ổ cứng để quá trình cài đặt diễn ra thuận tiện nhất.
 - Đổi hostname cho máy ansible: 
     sudo hostnamectl set-hostname ansible

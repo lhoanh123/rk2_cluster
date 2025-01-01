@@ -9,7 +9,7 @@
         content: |
           #!/bin/bash
 
-          sudo apt install git -y
+          sudo apt install git python3-pip -y
           
           # Check and install curl if it's not installed
           if ! command -v curl &> /dev/null; then
