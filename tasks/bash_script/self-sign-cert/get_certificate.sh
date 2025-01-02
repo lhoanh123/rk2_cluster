@@ -1,13 +1,11 @@
 #!/bin/bash
 
-set -e
-
 # Variables
-NAMESPACE="default"
-CERT_NAME="example-certificate"
-SECRET_NAME="example-tls"
-CERT_FILE="certificate.crt"
-KEY_FILE="certificate.key"
+NAMESPACE="mlops"
+CERT_NAME="mlflow-tracking-tls"
+SECRET_NAME="mlflow-tracking-tls"
+CERT_FILE="mlflow-tracking.crt"
+KEY_FILE="mlflow-tracking.key"
 CA_FILE="ca.crt"
 
 echo "=== Fetching certificate details from secret ==="

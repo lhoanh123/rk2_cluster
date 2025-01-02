@@ -1,13 +1,40 @@
 #!/bin/bash
 
 # Create self-signed certificate
+
+CERT_SECRET_NAME="mlflow-tracking-tls"
+CERT_NAMESPACE="mlops"
+COMMON_NAME="mlflow-tracking.local"
+DNS_NAME="mlflow-tracking.local"
+CLUSTER_ISSUER_NAME="my-ca-issuer"
+
+echo "=== Requesting a Certificate ==="
+kubectl apply -f - <<EOF
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: $CERT_SECRET_NAME
+  namespace: $CERT_NAMESPACE
+spec:
+  secretName: $CERT_SECRET_NAME
+  duration: 2160h # 90 days
+  renewBefore: 360h # 15 days
+  commonName: $COMMON_NAME
+  dnsNames:
+  - $DNS_NAME
+  privateKey:
+    algorithm: RSA
+    size: 2048
+  issuerRef:
+    name: $CLUSTER_ISSUER_NAME
+    kind: ClusterIssuer
+    group: cert-manager.io
+EOF
+
 openssl req -x509 -nodes -days 365 \
     -subj "/C=VN/ST=DongNai/L=BienHoa/O=UIT/OU=UIT/CN=mlflow-tracking.local" \
     -newkey rsa:4096 -keyout selfsigned.key \
     -out selfsigned.crt
-
-# Update /etc/hosts
-echo "127.0.0.1 mlflow-tracking.local" | sudo tee -a /etc/hosts
 
 # Create namespace
 kubectl create namespace mlops
@@ -35,7 +62,16 @@ EOF
 
 # Build and push Docker image
 docker build -t registry.local:5000/mlflow:v1 -f Dockerfile .
-docker push registry.local:5000/mlflow:v1
+docker pull registry.local:5000/mlflow:v1
+
+# Remote Tracking Server Details
+export MLFLOW_TRACKING_URI=https://mlflow-tracking.local
+export MLFLOW_TRACKING_INSECURE_TLS=true
+export MLFLOW_S3_ENDPOINT_URL=https://minio.local:9000
+export MLFLOW_S3_IGNORE_TLS=true
+export MLFLOW_ARTIFACTS_DESTINATION=s3://mlflow-artifacts
+export AWS_ACCESS_KEY_ID=MBWtTTbU8sI4tt6PoFRC
+export AWS_SECRET_ACCESS_KEY=D0cmHCpO4YXQLoBgfTQ7YMsdh1AvFmbtq5dS292N
 
 # Create deployment manifest
 cat <<EOF > mlflow-tracking-deploy.yaml
@@ -65,13 +101,13 @@ spec:
         - containerPort: 5000
         env:
           - name: MLFLOW_S3_ENDPOINT_URL
-            value: "http://minio-service:9000"
+            value: "http://minio.local:9000"
           - name: MLFLOW_S3_IGNORE_TLS
             value: "true"
           - name: AWS_ACCESS_KEY_ID
-            value: "admin"
+            value: "MBWtTTbU8sI4tt6PoFRC"
           - name: AWS_SECRET_ACCESS_KEY
-            value: "Password1234"
+            value: "D0cmHCpO4YXQLoBgfTQ7YMsdh1AvFmbtq5dS292N"
         command: ["mlflow", "server", "--host", "0.0.0.0", "--port", "5000", "--backend-store-uri", "postgresql+psycopg2://postgres:Password1234@postgres-service:5432/postgres", "--default-artifact-root", "s3://mlflow-artifacts"]
 EOF
 kubectl apply -f mlflow-tracking-deploy.yaml
@@ -128,15 +164,6 @@ spec:
     secretName: mlflow-tracking-tls
 EOF
 kubectl apply -f mlflow-tracking-ing.yaml
-
-# Remote Tracking Server Details
-export MLFLOW_TRACKING_URI=https://mlflow-tracking.local
-export MLFLOW_TRACKING_INSECURE_TLS=true
-export MLFLOW_S3_ENDPOINT_URL=https://minio.local
-export MLFLOW_S3_IGNORE_TLS=true
-export MLFLOW_ARTIFACTS_DESTINATION=s3://mlflow-artifacts
-export AWS_ACCESS_KEY_ID=LmxP6ZEYgJRxRE9tzbUM
-export AWS_SECRET_ACCESS_KEY=bwygxJDYc9PmYqthNPhdNFVIeaBrpk4OsPMMVuSb
 
 mkdir mlflow-testing
 cd mlflow-testing

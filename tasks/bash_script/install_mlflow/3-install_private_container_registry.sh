@@ -3,17 +3,34 @@
 # Create namespaces
 kubectl create namespace mlops
 
-# Generate self-signed certificate for Registry
-openssl req -x509 -nodes -days 365 \
-    -subj "/C=VN/ST=DongNai/L=BienHoa/O=UIT/OU=UIT/CN=registry.local" \
-    -newkey rsa:4096 -keyout registry.key \
-    -out registry.crt
+CERT_SECRET_NAME="registry-tls"
+CERT_NAMESPACE="mlops"
+COMMON_NAME="registry.local"
+DNS_NAME="registry.local"
+CLUSTER_ISSUER_NAME="my-ca-issuer"
 
-# Update /etc/hosts
-echo "127.0.0.1    registry.local" | sudo tee -a /etc/hosts
-
-# Create TLS secrets
-kubectl create secret tls registry-tls --namespace mlops --cert=registry.crt --key=registry.key
+echo "=== Requesting a Certificate ==="
+kubectl apply -f - <<EOF
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: $CERT_SECRET_NAME
+  namespace: $CERT_NAMESPACE
+spec:
+  secretName: $CERT_SECRET_NAME
+  duration: 2160h # 90 days
+  renewBefore: 360h # 15 days
+  commonName: $COMMON_NAME
+  dnsNames:
+  - $DNS_NAME
+  privateKey:
+    algorithm: RSA
+    size: 2048
+  issuerRef:
+    name: $CLUSTER_ISSUER_NAME
+    kind: ClusterIssuer
+    group: cert-manager.io
+EOF
 
 # Create authentication secret
 docker run --entrypoint htpasswd httpd:2 -Bbn admin Passw0rd1234 > htpasswd
@@ -127,7 +144,7 @@ metadata:
   labels:
     app: registry-service
 spec:
-  type: ClusterIP
+  type: LoadBalancer
   selector:
     app: registry
   ports:
@@ -180,3 +197,18 @@ docker image remove registry.local:5000/my-nginx:test
 docker pull registry.local:5000/my-nginx:test
 
 echo "Private container registry setup completed successfully."
+
+# kubectl delete ingress registry-ingress --namespace mlops
+
+# # Delete Service
+# kubectl delete service registry-service --namespace mlops
+
+# # Delete Deployment
+# kubectl delete deployment registry-deployment --namespace mlops
+
+# # Delete PersistentVolumeClaim
+# kubectl delete pvc registry-pvc --namespace mlops
+
+# # Delete Secrets
+# kubectl delete secret registry-auth --namespace mlops
+# kubectl delete secret registry-tls --namespace mlops

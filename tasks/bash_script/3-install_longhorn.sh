@@ -18,11 +18,10 @@ echo "Installing Longhorn with custom settings..."
 helm upgrade -i longhorn longhorn/longhorn --namespace $LONGHORN_NAMESPACE \
   --set ingress.enabled=true \
   --set ingress.host=$INGRESS_HOST \
-  --set settings.orphanDataCleanup=true \
-  --set settings.deletionConfirmation=true \
-  --set persistence.defaultStorageClass.retainPolicy="Delete" \
+  --set defaultSettings.deletingConfirmationFlag=true \
   --set persistence.defaultStorageClass.replicaCount=1 \
-  --set persistence.defaultStorageClass.dataLocality="Best-Effort" 
+  --set persistence.defaultClassReplicaCount=1 \
+  --set persistence.reclaimPolicy="Delete" 
 
 # Wait for the deployment to finish
 echo "Waiting for the Longhorn deployment to complete..."
@@ -32,21 +31,11 @@ sleep 30
 echo "Verifying Longhorn pod status..."
 kubectl get pods --namespace $LONGHORN_NAMESPACE
 
-# annotations: {}
-# csi:
-#   kubeletRootDir: /var/lib/kubelet
-# defaultSettings:
-#   allowRecurringJobWhileVolumeDetached: true
-#   autoCleanupSystemGeneratedSnapshot: true
-#   createDefaultDiskLabeledNodes: true
-#   defaultDataPath: <Default path "/var/lib/longhorn/"> Provide override path if any.
-#   disableRevisionCounter: true
-#   mkfsExt4Parameters: '-O ^64bit,^metadata_csum'
-#   replicaAutoBalance: least-effort
-#   replicaSoftAntiAffinity: false
-#   replicaZoneSoftAntiAffinity: true
-# persistence:
-#   defaultClass: true
-#   defaultClassReplicaCount: 1
-#   defaultFsType: ext4
-#   reclaimPolicy: Delete
+# helm upgrade -i longhorn longhorn/longhorn --namespace longhorn-system \
+#   --set ingress.enabled=true \
+#   --set ingress.host=longhorn.mylab.com \
+#   --set defaultSettings.deletingConfirmationFlag=true \
+#   --set persistence.reclaimPolicy="Delete" \
+#   --set persistence.defaultStorageClass.replicaCount=1 \
+#   --set persistence.defaultDataLocality="Best-Effort" \
+#   --set persistence.defaultClassReplicaCount=1 

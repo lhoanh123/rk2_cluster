@@ -109,7 +109,7 @@ metadata:
   labels:
     app: minio-service
 spec:
-  type: ClusterIP
+  type: LoadBalancer
   selector:
     app: minio
   ports:
@@ -186,7 +186,23 @@ spec:
 EOF
 
 # Output Access and Secret Keys
-echo "Access-Key: e0224UB6lunBUYfneAzU"
-echo "Secret-Key: wo6GQ2e0UobJR9wNzqwdXE5sUHMnrEbObU1D81Mv"
+echo "Access-Key: MBWtTTbU8sI4tt6PoFRC"
+echo "Secret-Key: D0cmHCpO4YXQLoBgfTQ7YMsdh1AvFmbtq5dS292N"
 
 echo "MinIO setup completed successfully."
+
+  # kubectl delete ingress minio-ingress --namespace mlops
+  # kubectl delete ingress minio-ui-ingress --namespace mlops
+
+  # # Delete Service
+  # kubectl delete service minio-service --namespace mlops
+
+  # # Delete Deployment
+  # kubectl delete deployment minio-deployment --namespace mlops
+
+  # # Delete PersistentVolumeClaim
+  # kubectl delete persistentvolumeclaim minio-pvc --namespace mlops
+
+  # # Delete TLS Secrets
+  # kubectl delete secret minio-tls --namespace mlops
+  # kubectl delete secret minio-ui-tls --namespace mlops

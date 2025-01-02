@@ -16,7 +16,7 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 1Gi
+      storage: 5Gi
 EOF
 
 # Create Deployment
@@ -55,7 +55,7 @@ spec:
             claimName: postgres-pvc
 EOF
 
-# Create Service
+# Create Service with LoadBalancer
 cat <<EOF | kubectl apply -f -
 apiVersion: v1
 kind: Service
@@ -63,11 +63,11 @@ metadata:
   name: postgres-service
   namespace: mlops
 spec:
-  type: ClusterIP
+  type: LoadBalancer
   selector:
     app: postgres
   ports:
-    - port: 5433
+    - port: 5432
       targetPort: 5432
 EOF
 
@@ -84,14 +84,11 @@ cat <<EOM
 PostgreSQL setup is complete.
 
 To connect to the database:
-1. Find the Cluster IP of the postgres-service using:
+1. Find the External IP of the postgres-service using:
    kubectl get svc -n mlops
 
 2. Use the PostgreSQL client to connect:
-   psql -h <CLUSTER_IP> -p 5433 -U postgres
-or:
-   kubectl port-forward svc/postgres-service 5433:5433
-   psql -h 127.0.0.1 -p 5433 -U postgres -W
+   psql -h <EXTERNAL-IP> -p 5432 -U postgres
 
 Once connected, run the following SQL commands:
    CREATE TABLE test_table(id SERIAL PRIMARY KEY, name VARCHAR(50));
@@ -101,3 +98,8 @@ Once connected, run the following SQL commands:
 EOM
 
 echo "PostgreSQL setup completed successfully."
+
+
+# kubectl delete service postgres-service --namespace mlops
+# kubectl delete deployment postgres-deployment --namespace mlops
+# kubectl delete persistentvolumeclaim postgres-pvc --namespace mlops

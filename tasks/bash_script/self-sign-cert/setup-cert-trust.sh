@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -e
-
 # Variables
 TRUST_MANAGER_VERSION="v0.7.0"
 NAMESPACE_CERT_MANAGER="cert-manager"
@@ -14,6 +12,7 @@ CERT_SECRET_NAME="example-tls"
 COMMON_NAME="example.local"
 DNS_NAME="example.local"
 CERT_NAMESPACE="default"
+TRUST_BUNDLE_NAME="my-root-ca-bundle"
 
 echo "=== Setting up a SelfSigned ClusterIssuer ==="
 kubectl apply -f - <<EOF
@@ -69,6 +68,7 @@ apiVersion: trust.cert-manager.io/v1alpha1
 kind: Bundle
 metadata:
   name: $TRUST_BUNDLE_NAME
+  namespace: $NAMESPACE_CERT_MANAGER
 spec:
   sources:
   - secret:
@@ -76,6 +76,7 @@ spec:
       key: tls.crt
   target:
     configMap:
+      name: $TRUST_BUNDLE_NAME
       key: root-certs.pem
     namespaceSelector:
       matchLabels:

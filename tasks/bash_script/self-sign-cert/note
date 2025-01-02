@@ -1,0 +1,6 @@
+sudo mkdir -p /usr/local/share/ca-certificates/extra
+sudo cp registry-local.crt /usr/local/share/ca-certificates/extra/registry-local.crt
+sudo update-ca-certificates
+sudo systemctl restart docker
+
+scp /usr/local/share/ca-certificates/extra/registry-local.crt ubuntu@192.168.9.154:/tmp/registry-local.crt
