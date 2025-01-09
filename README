@@ -1,6 +1,6 @@
 Script này tự động hóa quá trình triển khai RKE2 trong chế độ bình thường hoặc High Availability (HA) sử dụng Ansible. Hỗ trợ tùy chỉnh thông qua các biến môi trường.
 
-Có hỗ trợ thêm việc tải các tool liên quan trong thư mục "bash_script"
+Có hỗ trợ thêm việc tải các tool liên quan trong thư mục "tasks/bash_script"
 
 I. Yêu Cầu Trước Khi Thực Hiện:
 - Cài đặt Ansible trên máy điều khiển (control machine).

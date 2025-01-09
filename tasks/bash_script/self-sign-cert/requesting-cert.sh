@@ -1,9 +1,9 @@
 #!/bin/bash
 
-CERT_SECRET_NAME="example-tls"
-CERT_NAMESPACE="default"
-COMMON_NAME="example.local"
-DNS_NAME="example.local"
+CERT_SECRET_NAME="registry-tls"
+CERT_NAMESPACE="mlops"
+COMMON_NAME="registry.mylab.com"
+DNS_NAME="registry.mylab.com"
 CLUSTER_ISSUER_NAME="my-ca-issuer"
 
 echo "=== Requesting a Certificate ==="
@@ -14,6 +14,7 @@ metadata:
   name: $CERT_SECRET_NAME
   namespace: $CERT_NAMESPACE
 spec:
+  isCA: true
   secretName: $CERT_SECRET_NAME
   duration: 2160h # 90 days
   renewBefore: 360h # 15 days

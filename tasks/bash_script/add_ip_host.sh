@@ -7,8 +7,8 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 # Define the entry you want to add or modify (IP and hostname)
-IP_ADDRESS="10.43.47.199"
-HOSTNAME="registry.local"
+IP_ADDRESS="10.43.63.55"
+HOSTNAME="mlflow-tracking.local"
 
 # Ask the user what action they want to perform
 echo "Choose an action:"

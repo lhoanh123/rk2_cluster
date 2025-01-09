@@ -38,7 +38,7 @@ spec:
     spec:
       containers:
         - name: postgres
-          image: postgres:13
+          image: postgres:14
           ports:
             - containerPort: 5432
           env:
@@ -63,7 +63,7 @@ metadata:
   name: postgres-service
   namespace: mlops
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: postgres
   ports:

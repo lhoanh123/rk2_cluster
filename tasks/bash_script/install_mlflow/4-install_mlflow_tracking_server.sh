@@ -31,24 +31,7 @@ spec:
     group: cert-manager.io
 EOF
 
-openssl req -x509 -nodes -days 365 \
-    -subj "/C=VN/ST=DongNai/L=BienHoa/O=UIT/OU=UIT/CN=mlflow-tracking.local" \
-    -newkey rsa:4096 -keyout selfsigned.key \
-    -out selfsigned.crt
-
-# Create namespace
-kubectl create namespace mlops
-
-# Create Kubernetes TLS Secret
-kubectl create secret tls mlflow-tracking-tls --namespace mlops --cert=selfsigned.crt --key=selfsigned.key
-
-# Create Docker registry secret
-kubectl create secret docker-registry regcred --namespace mlops \
-  --docker-server=registry.local:5000 \
-  --docker-username=admin \
-  --docker-password=Passw0rd1234
-
-# Write Dockerfile
+# Create a Dockerfile for MLflow image
 cat <<EOF > Dockerfile
 FROM ghcr.io/mlflow/mlflow:v2.16.2
 
@@ -60,28 +43,26 @@ RUN apt-get -y update && \\
 CMD ["bash"]
 EOF
 
-# Build and push Docker image
-docker build -t registry.local:5000/mlflow:v1 -f Dockerfile .
-docker pull registry.local:5000/mlflow:v1
+# Build and push the Docker image to your private registry
+docker build -t registry.mylab.com:5000/mlflow:v1 -f Dockerfile .
+docker push registry.mylab.com:5000/mlflow:v1
 
-# Remote Tracking Server Details
-export MLFLOW_TRACKING_URI=https://mlflow-tracking.local
-export MLFLOW_TRACKING_INSECURE_TLS=true
-export MLFLOW_S3_ENDPOINT_URL=https://minio.local:9000
-export MLFLOW_S3_IGNORE_TLS=true
-export MLFLOW_ARTIFACTS_DESTINATION=s3://mlflow-artifacts
-export AWS_ACCESS_KEY_ID=MBWtTTbU8sI4tt6PoFRC
-export AWS_SECRET_ACCESS_KEY=D0cmHCpO4YXQLoBgfTQ7YMsdh1AvFmbtq5dS292N
+# Set up environment variables for MLflow configuration
+# export MLFLOW_TRACKING_URI=https://mlflow-tracking.local
+# export MLFLOW_TRACKING_INSECURE_TLS=true
+# export MLFLOW_S3_ENDPOINT_URL=https://minio.local:9000
+# export MLFLOW_S3_IGNORE_TLS=true
+# export MLFLOW_ARTIFACTS_DESTINATION=s3://mlflow-artifacts
+# export AWS_ACCESS_KEY_ID=hLb77XSAssSoLmiXUbgU
+# export AWS_SECRET_ACCESS_KEY=x6GGmJ81P0GyOjGBgT2xyYQvbZJywEqKLmHU3ddC
 
-# Create deployment manifest
+# Create deployment manifest for MLflow tracking
 cat <<EOF > mlflow-tracking-deploy.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mlflow-tracking-deployment
   namespace: mlops
-  labels:
-    app: mlflow-tracking-deployment
 spec:
   replicas: 1
   selector:
@@ -92,27 +73,29 @@ spec:
       labels:
         app: mlflow
     spec:
-      imagePullSecrets:
-        - name: regcred
       containers:
       - name: mlflow-tracking
-        image: registry.local:5000/mlflow:v1
+        image: 192.168.9.111:5000/mlflow:v1  # Use HTTP here
+        imagePullPolicy: Always  # Forces a fresh image pull
         ports:
         - containerPort: 5000
         env:
-          - name: MLFLOW_S3_ENDPOINT_URL
-            value: "http://minio.local:9000"
-          - name: MLFLOW_S3_IGNORE_TLS
-            value: "true"
-          - name: AWS_ACCESS_KEY_ID
-            value: "MBWtTTbU8sI4tt6PoFRC"
-          - name: AWS_SECRET_ACCESS_KEY
-            value: "D0cmHCpO4YXQLoBgfTQ7YMsdh1AvFmbtq5dS292N"
+        - name: MLFLOW_S3_ENDPOINT_URL
+          value: http://minio.local:9000
+        - name: MLFLOW_S3_IGNORE_TLS
+          value: "true"
+        - name: AWS_ACCESS_KEY_ID
+          value: hLb77XSAssSoLmiXUbgU
+        - name: AWS_SECRET_ACCESS_KEY
+          value: x6GGmJ81P0GyOjGBgT2xyYQvbZJywEqKLmHU3ddC
         command: ["mlflow", "server", "--host", "0.0.0.0", "--port", "5000", "--backend-store-uri", "postgresql+psycopg2://postgres:Password1234@postgres-service:5432/postgres", "--default-artifact-root", "s3://mlflow-artifacts"]
 EOF
-kubectl apply -f mlflow-tracking-deploy.yaml
 
-# Create service manifest
+# Apply the MLflow tracking deployment
+kubectl apply -f mlflow-tracking-deploy.yaml
+# kubectl delete -f mlflow-tracking-deploy.yaml
+
+# Create service manifest for MLflow tracking
 cat <<EOF > mlflow-tracking-svc.yaml
 apiVersion: v1
 kind: Service
@@ -122,7 +105,7 @@ metadata:
   labels:
     app: mlflow-tracking-service
 spec:
-  type: ClusterIP
+  type: LoadBalancer
   selector:
     app: mlflow
   ports:
@@ -131,39 +114,55 @@ spec:
     port: 5000
     targetPort: 5000
 EOF
+
+# Apply the MLflow tracking service
 kubectl apply -f mlflow-tracking-svc.yaml
 
-# Create ingress manifest
-cat <<EOF > mlflow-tracking-ing.yaml
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: mlflow-tracking-ingress
-  namespace: mlops
-  labels:
-    app: mlflow-tracking-ingress
-  annotations:
-    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-spec:
-  ingressClassName: nginx
-  rules:
-  - host: mlflow-tracking.local
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: mlflow-tracking-service
-            port:
-              number: 5000
-  tls:
-  - hosts:
-    - mlflow-tracking.local
-    secretName: mlflow-tracking-tls
-EOF
-kubectl apply -f mlflow-tracking-ing.yaml
+# # Create ingress manifest for MLflow tracking
+# cat <<EOF > mlflow-tracking-ing.yaml
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: mlflow-tracking-ingress
+#   namespace: mlops
+#   labels:
+#     app: mlflow-tracking-ingress
+#   annotations:
+#     nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+#     nginx.ingress.kubernetes.io/ssl-redirect: "true"
+# spec:
+#   ingressClassName: nginx
+#   rules:
+#   - host: mlflow-tracking.local
+#     http:
+#       paths:
+#       - path: /
+#         pathType: Prefix
+#         backend:
+#           service:
+#             name: mlflow-tracking-service
+#             port:
+#               number: 5000
+#   tls:
+#   - hosts:
+#     - mlflow-tracking.local
+#     secretName: mlflow-tracking-tls
+# EOF
+
+# # Apply the MLflow tracking ingress
+# kubectl apply -f mlflow-tracking-ing.yaml
+
+# Wait for the services to be ready and get the LoadBalancer IPs
+echo "Waiting for services to be ready..."
+
+# Get LoadBalancer IP for the MLflow Tracking service
+TRACKING_IP=$(kubectl get svc mlflow-tracking-service -n mlops -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+echo "MLflow Tracking UI is available at http://$TRACKING_IP:5000"
+
+# # Get LoadBalancer IP for the Ingress (if used)
+# INGRESS_IP=$(kubectl get ingress mlflow-tracking-ingress -n mlops -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+# echo "MLflow Tracking is accessible via ingress at http://$INGRESS_IP"
+
 
 mkdir mlflow-testing
 cd mlflow-testing

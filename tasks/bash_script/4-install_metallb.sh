@@ -32,7 +32,7 @@ kind: Deployment
 metadata:
   name: demo
 spec:
-  replicas: 6
+  replicas: 1
   selector:
     matchLabels:
       run: demo

@@ -1,24 +1,74 @@
 #!/bin/bash
 
-# Generate self-signed certificates
-openssl req -x509 -nodes -days 365 \
-    -subj "/C=VN/ST=DongNai/L=BienHoa/O=UIT/OU=UIT/CN=minio.local" \
-    -newkey rsa:4096 -keyout selfsigned.key \
-    -out selfsigned.crt
+CERT_SECRET_NAME="minio-tls"
+CERT_NAMESPACE="mlops"
+COMMON_NAME="minio.local"
+DNS_NAME="minio.local"
+CLUSTER_ISSUER_NAME="my-ca-issuer"
 
-openssl req -x509 -nodes -days 365 \
-    -subj "/C=VN/ST=DongNai/L=BienHoa/O=UIT/OU=UIT/CN=minio-ui.local" \
-    -newkey rsa:4096 -keyout selfsigned-ui.key \
-    -out selfsigned-ui.crt
+echo "=== Requesting a Certificate ==="
+kubectl apply -f - <<EOF
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: $CERT_SECRET_NAME
+  namespace: $CERT_NAMESPACE
+spec:
+  isCA: true
+  secretName: $CERT_SECRET_NAME
+  duration: 2160h # 90 days
+  renewBefore: 360h # 15 days
+  commonName: $COMMON_NAME
+  privateKey:
+    algorithm: RSA
+    size: 2048
+  issuerRef:
+    name: $CLUSTER_ISSUER_NAME
+    kind: ClusterIssuer
+    group: cert-manager.io
+EOF
 
-# Update /etc/hosts
-echo "127.0.0.1 minio.local" | sudo tee -a /etc/hosts
-echo "127.0.0.1 minio-ui.local" | sudo tee -a /etc/hosts
+CERT_SECRET_NAME="minio-ui-tls"
+CERT_NAMESPACE="mlops"
+COMMON_NAME="minio-ui.local"
+DNS_NAME="minio-ui.local"
+CLUSTER_ISSUER_NAME="my-ca-issuer"
+
+echo "=== Requesting a Certificate ==="
+kubectl apply -f - <<EOF
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: $CERT_SECRET_NAME
+  namespace: $CERT_NAMESPACE
+spec:
+  isCA: true
+  secretName: $CERT_SECRET_NAME
+  duration: 2160h # 90 days
+  renewBefore: 360h # 15 days
+  commonName: $COMMON_NAME
+  privateKey:
+    algorithm: RSA
+    size: 2048
+  issuerRef:
+    name: $CLUSTER_ISSUER_NAME
+    kind: ClusterIssuer
+    group: cert-manager.io
+EOF
+
+# # Update /etc/hosts
+# echo "127.0.0.1 minio.local" | sudo tee -a /etc/hosts
+# echo "127.0.0.1 minio-ui.local" | sudo tee -a /etc/hosts
 
 # Create namespace
 kubectl create namespace mlops
 
 # Create TLS secrets
+# openssl req -x509 -nodes -days 365 \
+#     -subj "/C=DE/ST=Berlin/L=Berlin/O=appdev24/OU=dev/CN=registry.local" \
+#     -newkey rsa:4096 -keyout selfsigned.key \
+#     -out selfsigned.crt
+
 kubectl create secret tls minio-tls --namespace mlops --cert=selfsigned.crt --key=selfsigned.key
 kubectl create secret tls minio-ui-tls --namespace mlops --cert=selfsigned-ui.crt --key=selfsigned-ui.key
 
@@ -109,7 +159,7 @@ metadata:
   labels:
     app: minio-service
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: minio
   ports:
@@ -186,8 +236,8 @@ spec:
 EOF
 
 # Output Access and Secret Keys
-echo "Access-Key: MBWtTTbU8sI4tt6PoFRC"
-echo "Secret-Key: D0cmHCpO4YXQLoBgfTQ7YMsdh1AvFmbtq5dS292N"
+echo "Access-Key: hLb77XSAssSoLmiXUbgU"
+echo "Secret-Key: x6GGmJ81P0GyOjGBgT2xyYQvbZJywEqKLmHU3ddC"
 
 echo "MinIO setup completed successfully."
 

@@ -86,7 +86,8 @@
       apt:
         name: open-iscsi
         state: present
-
+      when: inventory_hostname in groups['workers']
+      
     - name: Reboot the server to apply changes
       reboot:
         msg: "Rebooting to apply changes"

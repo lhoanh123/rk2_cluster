@@ -27,7 +27,8 @@ helm upgrade -i rancher rancher-latest/rancher \
   --namespace cattle-system \
   --set hostname="${HOSTNAME}" \
   --set bootstrapPassword="${BOOTSTRAP_PASSWORD}" \
-  --set replicas=2
+  --set replicas=1 \
+  --set service.type="LoadBalancer"
 
 # helm upgrade -i rancher rancher-latest/rancher \
 #   --create-namespace \

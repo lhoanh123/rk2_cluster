@@ -76,7 +76,6 @@ spec:
       key: tls.crt
   target:
     configMap:
-      name: $TRUST_BUNDLE_NAME
       key: root-certs.pem
     namespaceSelector:
       matchLabels:

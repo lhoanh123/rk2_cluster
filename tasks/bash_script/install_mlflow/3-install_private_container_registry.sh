@@ -1,43 +1,10 @@
 #!/bin/bash
+# https://oopflow.medium.com/how-to-setup-your-own-self-hosted-dockerhub-private-registry-on-kubernetes-f667e658994a
+# Create a YAML file for the namespace
 
-# Create namespaces
-kubectl create namespace mlops
 
-CERT_SECRET_NAME="registry-tls"
-CERT_NAMESPACE="mlops"
-COMMON_NAME="registry.local"
-DNS_NAME="registry.local"
-CLUSTER_ISSUER_NAME="my-ca-issuer"
-
-echo "=== Requesting a Certificate ==="
-kubectl apply -f - <<EOF
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: $CERT_SECRET_NAME
-  namespace: $CERT_NAMESPACE
-spec:
-  secretName: $CERT_SECRET_NAME
-  duration: 2160h # 90 days
-  renewBefore: 360h # 15 days
-  commonName: $COMMON_NAME
-  dnsNames:
-  - $DNS_NAME
-  privateKey:
-    algorithm: RSA
-    size: 2048
-  issuerRef:
-    name: $CLUSTER_ISSUER_NAME
-    kind: ClusterIssuer
-    group: cert-manager.io
-EOF
-
-# Create authentication secret
-docker run --entrypoint htpasswd httpd:2 -Bbn admin Passw0rd1234 > htpasswd
-kubectl create secret generic registry-auth --namespace mlops --from-literal=htpasswd="$(cat htpasswd)"
-
-# Create PersistentVolumeClaim for storage
-cat <<EOF | kubectl apply -f -
+# Create a YAML file for the PVC
+cat <<EOF > pvc.yaml
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -48,167 +15,219 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 5Gi
+      storage: 10Gi
   storageClassName: longhorn
 EOF
 
-# Create Deployment for the registry
-cat <<EOF | kubectl apply -f -
+# Create a YAML file for the registry config
+cat <<EOF > registry-config.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: registry-config
+  namespace: mlops
+data:
+  config.yml: |
+    version: 0.1
+    log:
+      fields:
+        service: registry
+    storage:
+      cache:
+        blobdescriptor: inmemory
+      filesystem:
+        rootdirectory: /var/lib/registry
+    delete:
+      enabled: true
+    http:
+      addr: :5000
+      headers:
+        Access-Control-Allow-Origin: ["*"]
+        Access-Control-Allow-Credentials: [true]
+        Access-Control-Allow-Headers: ['Authorization', 'Accept', 'Cache-Control']
+        Access-Control-Allow-Methods: ['HEAD', 'GET', 'OPTIONS', 'DELETE']
+EOF
+
+# Create a YAML file for the Docker registry deployment and service
+cat <<EOF > docker-registry.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: registry-deployment
+  name: docker-registry
   namespace: mlops
-  labels:
-    app: registry-deployment
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: registry
+      app: docker-registry
   template:
     metadata:
       labels:
-        app: registry
+        app: docker-registry
     spec:
       containers:
-        - name: registry-server
-          image: registry:2.8.3
-          ports:
-          - containerPort: 5000
-          env:
-            - name: REGISTRY_HTTP_TLS_CERTIFICATE
-              value: /etc/ssl/docker/tls.crt
-            - name: REGISTRY_HTTP_TLS_KEY
-              value: /etc/ssl/docker/tls.key
-            - name: REGISTRY_AUTH
-              value: "htpasswd"
-            - name: REGISTRY_AUTH_HTPASSWD_REALM
-              value: "Registry Realm"
-            - name: REGISTRY_AUTH_HTPASSWD_PATH
-              value: "/auth/htpasswd"
-            - name: REGISTRY_STORAGE_DELETE_ENABLED
-              value: "true"
-          command:
-          - /bin/registry
-          - serve
-          - /etc/docker/registry/config.yml
-          volumeMounts:
-            - name: registry-storage
-              mountPath: "/var/lib/registry"
-            - name: registry-certs
-              mountPath: "/etc/ssl/docker"
-              readOnly: true
-            - name: registry-auth
-              mountPath: "/auth"
-              readOnly: true
-          resources:
-            limits:
-              cpu: 200m
-              memory: 256Mi
-            requests:
-              cpu: 100m
-              memory: 128Mi
-          readinessProbe:
-            httpGet:
-              scheme: HTTPS
-              path: /
-              port: 5000
-          livenessProbe:
-            httpGet:
-              scheme: HTTPS
-              path: /
-              port: 5000
-      volumes:
+      - name: registry
+        image: registry:2
+        env:
+        - name: REGISTRY_HTTP_ADDR
+          value: :5000
+        - name: REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY
+          value: /var/lib/registry
+        - name: REGISTRY_STORAGE_DELETE_ENABLED
+          value: "true"
+        ports:
+        - containerPort: 5000
+          name: registry
+        volumeMounts:
         - name: registry-storage
-          persistentVolumeClaim:
-            claimName: registry-pvc
-        - name: registry-certs
-          secret:
-            secretName: registry-tls
-        - name: registry-auth
-          secret:
-            secretName: registry-auth
-            items:
-            - key: htpasswd
-              path: htpasswd
-EOF
-
-# Create Service for the registry
-cat <<EOF | kubectl apply -f -
+          mountPath: /var/lib/registry
+        - name: registry-config
+          mountPath: /etc/docker/registry
+      volumes:
+      - name: registry-storage
+        persistentVolumeClaim:
+          claimName: registry-pvc
+      - name: registry-config
+        configMap:
+          name: registry-config
+---
 apiVersion: v1
 kind: Service
 metadata:
-  name: registry-service
+  name: docker-registry
   namespace: mlops
-  labels:
-    app: registry-service
 spec:
-  type: LoadBalancer
   selector:
-    app: registry
+    app: docker-registry
   ports:
-  - name: tcp
-    protocol: TCP
-    port: 5000
-    targetPort: 5000
+    - protocol: TCP
+      port: 5000
+      targetPort: 5000
+  type: LoadBalancer
 EOF
 
-# Create Ingress for the registry
-cat <<EOF | kubectl apply -f -
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+# Create a YAML file for the registry UI deployment and service
+cat <<EOF > docker-registry-ui.yaml
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: registry-ingress
+  name: docker-registry-ui
   namespace: mlops
-  labels:
-    app: registry-ingress
-  annotations:
-    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
-    nginx.ingress.kubernetes.io/ssl-passthrough: "true"
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
 spec:
-  ingressClassName: nginx
-  rules:
-  - host: registry.local
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: registry-service
-            port:
-              number: 5000
-  tls:
-  - hosts:
-    - registry.local
-    secretName: registry-tls
+  replicas: 1
+  selector:
+    matchLabels:
+      app: docker-registry-ui
+  template:
+    metadata:
+      labels:
+        app: docker-registry-ui
+    spec:
+      containers:
+        - name: docker-registry-ui
+          image: joxit/docker-registry-ui:latest
+          ports:
+            - containerPort: 80
+          env:
+            - name: REGISTRY_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: docker-registry-ui-config
+                  key: registry_url
+            - name: DELETE_IMAGES
+              value: "true"
+            - name: SINGLE_REGISTRY
+              value: "true"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: docker-registry-ui
+  namespace: mlops
+spec:
+  selector:
+    app: docker-registry-ui
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: LoadBalancer
 EOF
 
-# Test the setup
-docker login registry.local:5000 -u admin -p Passw0rd1234
+# Apply all configurations
+kubectl apply -f pvc.yaml
+kubectl apply -f registry-config.yaml
+kubectl apply -f docker-registry.yaml
+
+# Wait for LoadBalancer IPs
+echo "Waiting for LoadBalancer IPs..."
+sleep 30
+
+REGISTRY_IP=$(kubectl get svc docker-registry -n mlops -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+
+# Create a YAML file for the ConfigMap dynamically
+cat <<EOF > docker-registry-ui-config.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: docker-registry-ui-config
+  namespace: mlops
+data:
+  registry_url: http://192.168.9.111:5000
+EOF
+
+# Apply the ConfigMap
+kubectl apply -f docker-registry-ui-config.yaml
+
+kubectl apply -f docker-registry-ui.yaml
+
+# Get LoadBalancer IPs
+
+UI_IP=$(kubectl get svc docker-registry-ui -n mlops -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+
+echo "Docker registry deployed at http://$REGISTRY_IP:5000"
+echo "Docker registry UI deployed at http://$UI_IP"
+
+# Variables
+REGISTRY_IP="registry.mylab.com"
+REGISTRY_PORT="5000"
+IMAGE_NAME="my-nginx"
+TAG="test"
+
+# Update or Create /etc/docker/daemon.json
+DOCKER_CONFIG="/etc/docker/daemon.json"
+if [ -f "$DOCKER_CONFIG" ]; then
+  echo "Updating $DOCKER_CONFIG..."
+  jq '.["insecure-registries"] += ["'"$REGISTRY_IP:$REGISTRY_PORT"'"]' "$DOCKER_CONFIG" > /tmp/daemon.json && mv /tmp/daemon.json "$DOCKER_CONFIG"
+else
+  echo "Creating $DOCKER_CONFIG..."
+  cat <<EOF > "$DOCKER_CONFIG"
+{
+  "insecure-registries": ["$REGISTRY_IP:$REGISTRY_PORT"]
+}
+EOF
+fi
+
+# Restart Docker
+
+echo "Restarting Docker..."
+sudo systemctl restart docker
+
+REGISTRY_IP="192.168.9.111"
+REGISTRY_PORT="5000"
+IMAGE_NAME="my-nginx"
+TAG="test"
+
+# Pull, tag, and push the image
+echo "Pulling nginx:latest..."
 docker pull nginx:latest
-docker tag nginx:latest registry.local:5000/my-nginx:test
-docker push registry.local:5000/my-nginx:test
 
-docker image remove nginx:latest
-docker image remove registry.local:5000/my-nginx:test
-docker pull registry.local:5000/my-nginx:test
+echo "Tagging the image..."
+docker tag nginx:latest $REGISTRY_IP:$REGISTRY_PORT/$IMAGE_NAME:$TAG
 
-echo "Private container registry setup completed successfully."
+echo "Pushing the image to $REGISTRY_IP:$REGISTRY_PORT..."
+docker push $REGISTRY_IP:$REGISTRY_PORT/$IMAGE_NAME:$TAG
 
-# kubectl delete ingress registry-ingress --namespace mlops
-
-# # Delete Service
-# kubectl delete service registry-service --namespace mlops
-
-# # Delete Deployment
-# kubectl delete deployment registry-deployment --namespace mlops
-
-# # Delete PersistentVolumeClaim
-# kubectl delete pvc registry-pvc --namespace mlops
-
-# # Delete Secrets
-# kubectl delete secret registry-auth --namespace mlops
-# kubectl delete secret registry-tls --namespace mlops
+# docker pull nginx:latest
+# docker tag nginx:latest 192.168.9.111:5000/my-nginx:test
+# docker push 192.168.9.111:5000/my-nginx:test
