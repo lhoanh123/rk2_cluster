@@ -28,10 +28,10 @@ echo "Installing or upgrading Rancher..."
 helm upgrade -i rancher rancher-latest/rancher \
   --create-namespace \
   --namespace cattle-system \
-  --set hostname="${HOSTNAME}" \             # Cấu hình hostname cho Rancher.
-  --set bootstrapPassword="${BOOTSTRAP_PASSWORD}" \  # Đặt mật khẩu bootstrap mặc định.
-  --set replicas=1 \                         # Đặt số bản sao (replica) của Rancher là 1.
-  --set service.type="LoadBalancer"          # Sử dụng kiểu service LoadBalancer.
+  --set hostname="${HOSTNAME}" \
+  --set bootstrapPassword="${BOOTSTRAP_PASSWORD}" \
+  --set replicas=1 \
+  --set service.type="LoadBalancer"
 
 # Dòng bên dưới là một phiên bản khác của lệnh cài đặt Rancher, đã được comment.
 # helm upgrade -i rancher rancher-latest/rancher \

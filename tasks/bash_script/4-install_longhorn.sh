@@ -16,12 +16,12 @@ kubectl create namespace $LONGHORN_NAMESPACE
 # Cài đặt Longhorn sử dụng Helm với các cấu hình tùy chỉnh.
 echo "Installing Longhorn with custom settings..."
 helm upgrade -i longhorn longhorn/longhorn --namespace $LONGHORN_NAMESPACE \
-  --set ingress.enabled=true \                          # Bật Ingress để truy cập giao diện web.
-  --set ingress.host=$INGRESS_HOST \                   # Đặt hostname cho Ingress.
-  --set defaultSettings.deletingConfirmationFlag=true \  # Bật cờ xác nhận trước khi xóa volume.
-  --set persistence.defaultStorageClass.replicaCount=1 \  # Đặt số bản sao mặc định của volume là 1.
-  --set persistence.defaultClassReplicaCount=1 \       # Đặt số bản sao mặc định của StorageClass là 1.
-  --set persistence.reclaimPolicy="Delete"             # Chính sách xóa dữ liệu khi PersistentVolume bị xóa.
+  --set ingress.enabled=true \
+  --set ingress.host=$INGRESS_HOST \
+  --set defaultSettings.deletingConfirmationFlag=true \
+  --set persistence.defaultStorageClass.replicaCount=1 \
+  --set persistence.defaultClassReplicaCount=1 \
+  --set persistence.reclaimPolicy="Delete"
 
 # Chờ một thời gian để đảm bảo các tài nguyên được triển khai đầy đủ.
 echo "Waiting for the Longhorn deployment to complete..."

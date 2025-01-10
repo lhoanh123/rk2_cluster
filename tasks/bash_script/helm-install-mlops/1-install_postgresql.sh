@@ -11,12 +11,12 @@ metadata:
   name: postgres-pvc
   namespace: mlops
 spec:
-  storageClassName: longhorn  # Sử dụng Longhorn làm StorageClass
+  storageClassName: longhorn
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 5Gi  # Yêu cầu 5Gi dung lượng lưu trữ
+      storage: 5Gi
 EOF
 
 # Tạo Deployment cho PostgreSQL
@@ -27,7 +27,7 @@ metadata:
   name: postgres-deployment
   namespace: mlops
 spec:
-  replicas: 1  # Số lượng bản sao container
+  replicas: 1
   selector:
     matchLabels:
       app: postgres
@@ -38,11 +38,11 @@ spec:
     spec:
       containers:
         - name: postgres
-          image: postgres:14  # Sử dụng image PostgreSQL phiên bản 14
+          image: postgres:14
           ports:
-            - containerPort: 5432  # Cổng mà container sử dụng
+            - containerPort: 5432
           env:
-            - name: POSTGRES_PASSWORD  # Mật khẩu cho PostgreSQL
+            - name: POSTGRES_PASSWORD
               value: "Password1234"
             - name: PGDATA
               value: "/var/lib/postgresql/data/pgdata"
@@ -52,7 +52,7 @@ spec:
       volumes:
         - name: postgres-storage
           persistentVolumeClaim:
-            claimName: postgres-pvc  # Liên kết với PersistentVolumeClaim
+            claimName: postgres-pvc
 EOF
 
 # Tạo Service để truy cập PostgreSQL (Loại ClusterIP)
@@ -63,12 +63,12 @@ metadata:
   name: postgres-service
   namespace: mlops
 spec:
-  type: ClusterIP  # Loại dịch vụ là ClusterIP
+  type: ClusterIP
   selector:
     app: postgres
   ports:
     - port: 5432
-      targetPort: 5432  # Định tuyến cổng từ service tới container
+      targetPort: 5432
 EOF
 
 # Kiểm tra Service đã được tạo

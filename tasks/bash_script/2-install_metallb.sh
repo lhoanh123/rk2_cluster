@@ -42,7 +42,7 @@ kind: Deployment
 metadata:
   name: demo
 spec:
-  replicas: 1  # Số lượng bản sao (replica) của ứng dụng.
+  replicas: 1
   selector:
     matchLabels:
       run: demo
@@ -53,9 +53,9 @@ spec:
     spec:
       containers:
       - name: demo
-        image: klimenta/serverip  # Ứng dụng đơn giản trả về IP của server.
+        image: klimenta/serverip
         ports:
-        - containerPort: 3000  # Port của container.
+        - containerPort: 3000
 ---
 apiVersion: v1
 kind: Service
@@ -63,10 +63,10 @@ metadata:
   name: loadbalancer
 spec:
   ports:
-    - port: 80  # Port mà Service sẽ expose ra bên ngoài.
-      targetPort: 3000  # Port của container ứng dụng.
+    - port: 80
+      targetPort: 3000
       protocol: TCP
-  type: LoadBalancer  # Sử dụng loại Service LoadBalancer.
+  type: LoadBalancer
   selector:
     run: demo
 EOF
