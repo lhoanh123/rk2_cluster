@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Create namespace
+# Tạo namespace mlops
 kubectl create namespace mlops
 
-# Create PersistentVolumeClaim
+# Tạo PersistentVolumeClaim cho PostgreSQL
 cat <<EOF | kubectl apply -f -
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -11,15 +11,15 @@ metadata:
   name: postgres-pvc
   namespace: mlops
 spec:
-  storageClassName: longhorn
+  storageClassName: longhorn  # Sử dụng Longhorn làm StorageClass
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 5Gi
+      storage: 5Gi  # Yêu cầu 5Gi dung lượng lưu trữ
 EOF
 
-# Create Deployment
+# Tạo Deployment cho PostgreSQL
 cat <<EOF | kubectl apply -f -
 apiVersion: apps/v1
 kind: Deployment
@@ -27,7 +27,7 @@ metadata:
   name: postgres-deployment
   namespace: mlops
 spec:
-  replicas: 1
+  replicas: 1  # Số lượng bản sao container
   selector:
     matchLabels:
       app: postgres
@@ -38,11 +38,11 @@ spec:
     spec:
       containers:
         - name: postgres
-          image: postgres:14
+          image: postgres:14  # Sử dụng image PostgreSQL phiên bản 14
           ports:
-            - containerPort: 5432
+            - containerPort: 5432  # Cổng mà container sử dụng
           env:
-            - name: POSTGRES_PASSWORD
+            - name: POSTGRES_PASSWORD  # Mật khẩu cho PostgreSQL
               value: "Password1234"
             - name: PGDATA
               value: "/var/lib/postgresql/data/pgdata"
@@ -52,10 +52,10 @@ spec:
       volumes:
         - name: postgres-storage
           persistentVolumeClaim:
-            claimName: postgres-pvc
+            claimName: postgres-pvc  # Liên kết với PersistentVolumeClaim
 EOF
 
-# Create Service with LoadBalancer
+# Tạo Service để truy cập PostgreSQL (Loại ClusterIP)
 cat <<EOF | kubectl apply -f -
 apiVersion: v1
 kind: Service
@@ -63,22 +63,22 @@ metadata:
   name: postgres-service
   namespace: mlops
 spec:
-  type: ClusterIP
+  type: ClusterIP  # Loại dịch vụ là ClusterIP
   selector:
     app: postgres
   ports:
     - port: 5432
-      targetPort: 5432
+      targetPort: 5432  # Định tuyến cổng từ service tới container
 EOF
 
-# Verify Service
+# Kiểm tra Service đã được tạo
 kubectl get svc -n mlops
 
-# Install PostgreSQL client (uncomment if running on a local machine)
+# Cài đặt PostgreSQL client (uncomment nếu chạy trên máy cục bộ)
 sudo apt update
 sudo apt install -y postgresql-client-common postgresql-client
 
-# Print instructions for accessing PostgreSQL
+# In ra hướng dẫn kết nối với PostgreSQL
 cat <<EOM
 
 PostgreSQL setup is complete.
@@ -100,6 +100,7 @@ EOM
 echo "PostgreSQL setup completed successfully."
 
 
+# Lệnh xóa dịch vụ, deployment và PVC (nếu muốn xóa)
 # kubectl delete service postgres-service --namespace mlops
 # kubectl delete deployment postgres-deployment --namespace mlops
 # kubectl delete persistentvolumeclaim postgres-pvc --namespace mlops

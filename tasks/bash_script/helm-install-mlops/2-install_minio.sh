@@ -1,7 +1,8 @@
+# Thêm kho Helm Bitnami và cập nhật danh sách chart
 helm repo add bitnami https://charts.bitnami.com/bitnami
-
 helm repo update
 
+# Tạo PersistentVolumeClaim cho MinIO sử dụng Longhorn làm storage backend
 cat <<EOF | kubectl apply -f -
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -17,9 +18,11 @@ spec:
       storage: 10Gi
 EOF
 
+# Mã hóa thông tin root user và password cho MinIO
 echo -n 'admin' | base64
 echo -n 'adminpassword' | base64
 
+# Tạo Secret chứa thông tin người dùng root cho MinIO
 cat <<EOF | kubectl apply -f -
 apiVersion: v1
 kind: Secret
@@ -31,6 +34,7 @@ data:
   root-password: YWRtaW5wYXNzd29yZA==
 EOF
 
+# Tạo file cấu hình Helm với các tham số cho MinIO (persistence, ingress, TLS, v.v.)
 cat <<EOF > values.yaml
 global:
   defaultStorageClass: "longhorn"
@@ -53,7 +57,7 @@ ingress:
 persistence:
   enabled: true
   storageClassName: "longhorn"
-  size: 10Gi # Adjust based on your requirements
+  size: 10Gi
   accessMode: ReadWriteOnce
   existingClaim: "minio-pvc"
 
@@ -75,22 +79,24 @@ resources:
     memory: "512Mi"
     cpu: "500m"
   limits:
-    memory: "1Gi"
+    memory: "2Gi"
     cpu: "1"
 EOF
 
+# Cài đặt MinIO qua Helm với cấu hình đã tạo
 helm upgrade --install my-release oci://registry-1.docker.io/bitnamicharts/minio -f values.yaml --namespace mlops
 
+# Xóa release nếu không cần thiết
 # helm uninstall my-release --namespace mlops
 
-# my-release-minio.mlops.svc.cluster.local
-
+# Lấy thông tin người dùng root và password từ secret và xuất ra
 export ROOT_USER=$(kubectl get secret --namespace mlops minio-root-user -o jsonpath="{.data.root-user}" | base64 -d)
 export ROOT_PASSWORD=$(kubectl get secret --namespace mlops minio-root-user -o jsonpath="{.data.root-password}" | base64 -d)
 
 echo "Root User: $ROOT_USER"
 echo "Root Password: $ROOT_PASSWORD"
 
+# Chạy MinIO client để thiết lập kết nối với MinIO server
 kubectl run --namespace mlops my-release-minio-client \
   --rm --tty -i --restart='Never' \
   --env MINIO_SERVER_ROOT_USER=$ROOT_USER \
@@ -98,11 +104,5 @@ kubectl run --namespace mlops my-release-minio-client \
   --image docker.io/bitnami/minio-client:2024.11.21-debian-12-r1 -- \
   mc alias set myminio https://192.168.9.112:9000 $ROOT_USER $ROOT_PASSWORD --insecure
   
-#   https://minio.mylab.com:9001/login
-
-#   Access Key: CeGeT5fesfdHa4unYt2p
-
-#   Secret Key:ZxxHWqpOfy8SGzkzGbjMkG86tudAq9KAiPckB5gJ
-
-
-
+# Địa chỉ truy cập MinIO qua web UI: https://minio.mylab.com:9001/login
+# Access Key và Secret Key sẽ được sử dụng để đăng nhập vào giao diện MinIO

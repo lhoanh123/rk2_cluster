@@ -1,11 +1,11 @@
+# Tạo file htpasswd cho Docker Registry với thông tin đăng nhập (user: oanh, password: oanh)
+# Lệnh này tạo một mật khẩu được mã hóa cho registry và lưu vào file htpasswd
+# Sử dụng lệnh `htpasswd` của Docker Registry để mã hóa mật khẩu
 # docker run --rm --entrypoint htpasswd registry:2.7.0 -Bbn oanh oanh > htpasswd
-
-# oanh:$2y$05$C9D.xoX9Lr6UBmJCAkF6dOC4gDl6.dZ7sshkoUugc9I15skWp4ev2
-# https://kb.leaseweb.com/kb/kubernetes/kubernetes-deploying-a-docker-registry-on-kubernetes/
-# https://github.com/twuni/docker-registry.helm/blob/main/values.yaml
-
+# Tạo secret chứa thông tin đăng nhập đã mã hóa từ file htpasswd trong Kubernetes
 # kubectl create secret generic registry-auth-secret --from-file=htpasswd --namespace mlops --dry-run=client -o yaml | kubectl apply -f -
 
+# Tạo PersistentVolumeClaim (PVC) cho Docker Registry với dung lượng 10Gi sử dụng Longhorn làm storage
 cat <<EOF > pvc.yaml
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -21,14 +21,17 @@ spec:
   storageClassName: longhorn
 EOF
 
+# Áp dụng PVC đã tạo vào Kubernetes
 kubectl apply -f pvc.yaml
 
+# Thêm kho Helm của twuni và cập nhật danh sách các chart
 helm repo add twuni https://helm.twun.io
-
 helm repo update
 
+# Tìm kiếm chart Docker Registry từ kho Helm
 helm search repo docker-registry
 
+# Tạo file cấu hình Helm cho Docker Registry (service, ingress, persistence, v.v.)
 cat <<EOF > values.yaml
 ---
 # Default values for docker-registry.
@@ -82,18 +85,24 @@ configData:
       threshold: 3
 EOF
 
+# Cài đặt Docker Registry qua Helm với các cấu hình đã tạo
 helm upgrade --install docker-registry twuni/docker-registry -f values.yaml --namespace mlops
 
+# Kiểm tra các dịch vụ đang chạy trong namespace mlops
 kubectl get svc -n mlops
 
+# Gỡ cài đặt Docker Registry nếu không cần thiết
 # helm uninstall docker-registry --namespace mlops
 
+# Tạo và đẩy image Docker vào registry cá nhân đã cài đặt
 docker pull nginx:latest
 docker tag nginx:latest registry.mylab.com:5000/my-nginx:test
 docker push registry.mylab.com:5000/my-nginx:test
 
+# Kéo image từ registry cá nhân về
 docker pull registry.mylab.com:5000/my-nginx:test
 
+# Cấu hình registry cho RKE2 để sử dụng registry cá nhân (non-HTTPS)
 cat <<EOF > /etc/rancher/rke2/registries.yaml
 mirrors:
   registry.mylab.com:5000:
@@ -101,26 +110,15 @@ mirrors:
       - "http://registry.mylab.com:5000"
 EOF
 
-REGISTRY_IP="registry.mylab.com"
-REGISTRY_PORT="5000"
-
-# Update or Create /etc/docker/daemon.json
-DOCKER_CONFIG="/etc/docker/daemon.json"
-if [ -f "$DOCKER_CONFIG" ]; then
-  echo "Updating $DOCKER_CONFIG..."
-  jq '.["insecure-registries"] += ["'"$REGISTRY_IP:$REGISTRY_PORT"'"]' "$DOCKER_CONFIG" > /tmp/daemon.json && mv /tmp/daemon.json "$DOCKER_CONFIG"
-else
-  echo "Creating $DOCKER_CONFIG..."
-  cat <<EOF > "$DOCKER_CONFIG"
+# Cấu hình Docker để sử dụng registry không bảo mật (non-HTTPS)
+cat <<EOF > /etc/docker/daemon.json
 {
-  "insecure-registries": ["$REGISTRY_IP:$REGISTRY_PORT"]
+  "insecure-registries": ["registry.mylab.com:5000"]
 }
 EOF
-fi
 
-# Restart Docker
-
+# Khởi động lại dịch vụ Docker và RKE2 để áp dụng các cấu hình mới
 echo "Restarting Docker..."
 sudo systemctl restart docker
 sudo systemctl restart rke2-server
-# sudo systemctl restart rke2-server
+# sudo systemctl restart rke2-agent

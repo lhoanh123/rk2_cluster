@@ -1,7 +1,8 @@
+# Thêm kho Helm của Joxit và cập nhật danh sách các chart
 helm repo add joxit https://helm.joxit.dev
 helm repo update
 
-# Create a YAML file for the ConfigMap dynamically
+# Tạo file ConfigMap để cấu hình Docker Registry UI, với URL của registry
 cat <<EOF > docker-registry-ui-config.yaml
 apiVersion: v1
 kind: ConfigMap
@@ -12,6 +13,7 @@ data:
   registry_url: http://registry.mylab.com:5000
 EOF
 
+# Tạo file cấu hình Helm cho Docker Registry UI (cấu hình UI, service, ingress, v.v.)
 cat <<EOF > values.yaml
 ui:
   replicas: 1
@@ -31,6 +33,8 @@ ui:
     ingressClassName: nginx
 EOF
 
+# Cài đặt Docker Registry UI qua Helm với các cấu hình đã tạo
 helm upgrade --install docker-registry-ui joxit/docker-registry-ui -f values.yaml --namespace mlops
 
+# Gỡ cài đặt Docker Registry UI nếu không cần thiết
 # helm uninstall docker-registry-ui joxit/docker-registry-ui --namespace mlops

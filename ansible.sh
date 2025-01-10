@@ -1,29 +1,29 @@
 #!/bin/bash
 
-# Default values for variables
-: "${USERNAME:=ubuntu}"                     # SSH username
-: "${ANSIBLE_HOST_IP:=192.168.198.129}"     # Control machine IP
-: "${RKE2_VERSION:=v1.30.6+rke2r1}"         # Default RKE2 version
-: "${RKE2_MODE:=normal}"                    # Default mode (normal or ha)
-: "${RKE2_TOKEN:=yourSecureToken123}"       # Default RKE2 token
-: "${API_IP:=}"                             # Default API IP (empty for normal mode)
-: "${RKE2_CNI:=canal}"                      # Default CNI (Container Network Interface)
-: "${RKE2_LOADBALANCER_RANGE:=}"            # Default load balancer IP range
-: "${USE_KUBEVIP:=false}"                   # Default to keepalived, set to true for kubevip
-: "${RKE2_HA_MODE_KUBEVIP:=false}"          # Default HA mode kubevip (false)
-: "${RKE2_HA_MODE_KEEPALIVED:=true}"        # Default HA mode keepalived (true)
+# Đặt giá trị mặc định cho các biến nếu chưa được định nghĩa
+: "${USERNAME:=ubuntu}"                     # Tên người dùng SSH mặc định
+: "${ANSIBLE_HOST_IP:=192.168.198.129}"     # Địa chỉ IP của máy điều khiển (control machine)
+: "${RKE2_VERSION:=v1.30.6+rke2r1}"         # Phiên bản RKE2 mặc định
+: "${RKE2_MODE:=normal}"                    # Chế độ RKE2 mặc định (normal hoặc ha)
+: "${RKE2_TOKEN:=yourSecureToken123}"       # Token RKE2 mặc định
+: "${API_IP:=}"                             # Địa chỉ API IP (để trống với chế độ normal)
+: "${RKE2_CNI:=canal}"                      # Plugin mạng mặc định (CNI)
+: "${RKE2_LOADBALANCER_RANGE:=}"            # Dải IP Load Balancer mặc định
+: "${USE_KUBEVIP:=false}"                   # Sử dụng kube-vip (false = dùng keepalived)
+: "${RKE2_HA_MODE_KUBEVIP:=false}"          # Chế độ HA sử dụng kube-vip
+: "${RKE2_HA_MODE_KEEPALIVED:=true}"        # Chế độ HA sử dụng keepalived (mặc định)
 
-# Arrays of IPs for masters and workers
-MASTER_IPS=(${MASTER_IPS:-192.168.198.141})
-WORKER_IPS=(${WORKER_IPS:-192.168.198.132})
+# Danh sách các địa chỉ IP cho các master và worker nodes
+MASTER_IPS=(${MASTER_IPS:-192.168.198.141})  # IP của các master nodes
+WORKER_IPS=(${WORKER_IPS:-192.168.198.132})  # IP của các worker nodes
 
-# Prepare Ansible machine
+# Cài đặt môi trường Ansible
 sudo apt update
 sudo apt install ansible -y
 sudo apt install curl -y
 ansible-galaxy install lablabs.rke2 --force
 
-# Check if SSH is installed; if not, install it
+# Kiểm tra và cài đặt OpenSSH Server nếu chưa có
 if ! dpkg -l | grep -q openssh-server; then
     echo "OpenSSH Server is not installed. Installing..."
     sudo apt install -y openssh-server
@@ -31,7 +31,7 @@ else
     echo "OpenSSH Server is already installed."
 fi
 
-# Enable and start SSH service if not already running
+# Kích hoạt và khởi chạy dịch vụ SSH nếu chưa hoạt động
 if ! systemctl is-active --quiet ssh; then
     echo "Starting SSH service..."
     sudo systemctl enable ssh
@@ -40,12 +40,12 @@ else
     echo "SSH service is already running."
 fi
 
-# Generate SSH keys if they don’t already exist
+# Tạo SSH key nếu chưa tồn tại
 if [ ! -f "$HOME/.ssh/id_rsa" ]; then
     ssh-keygen -t rsa -N "" -f "$HOME/.ssh/id_rsa"
 fi
 
-# Copy SSH keys to master and worker nodes
+# Sao chép SSH key đến các master và worker nodes
 for MASTER_IP in "${MASTER_IPS[@]}"; do
     ssh-copy-id "$USERNAME@$MASTER_IP"
 done
@@ -54,34 +54,32 @@ for WORKER_IP in "${WORKER_IPS[@]}"; do
     ssh-copy-id "$USERNAME@$WORKER_IP"
 done
 
-# Function to add IPv4 entries to /etc/hosts
+# Hàm thêm địa chỉ IP vào /etc/hosts
 add_to_hosts() {
     local ip=$1
     local hostname=$2
 
-    # Remove any existing entry with the same hostname, regardless of IP
+    # Xóa các mục nhập cũ với cùng hostname
     sudo sed -i "/[[:space:]]$hostname$/d" /etc/hosts
 
-    # Add the new entry, ensuring it's added before the IPv6 section
+    # Thêm mục mới trước phần IPv6
     sudo sed -i "/^# The following lines are desirable for IPv6 capable hosts/i\\$ip $hostname" /etc/hosts
 }
 
-# Add control machine and node IPs to /etc/hosts
+# Thêm IP của control machine và các node vào /etc/hosts
 add_to_hosts "$ANSIBLE_HOST_IP" "ansible"
 
-# Update master nodes in /etc/hosts
 for i in "${!MASTER_IPS[@]}"; do
     MASTER_IP=${MASTER_IPS[i]}
     add_to_hosts "$MASTER_IP" "master$((i+1))"
 done
 
-# Update worker nodes in /etc/hosts
 for i in "${!WORKER_IPS[@]}"; do
     WORKER_IP=${WORKER_IPS[i]}
     add_to_hosts "$WORKER_IP" "worker$((i+1))"
 done
 
-# Create an Ansible hosts file with master and worker configurations
+# Tạo file cấu hình Ansible hosts
 cat > hosts <<EOF
 [masters]
 EOF
@@ -108,14 +106,14 @@ masters
 workers
 EOF
 
-# Function to get the latest RKE2 version from GitHub
+# Hàm lấy phiên bản RKE2 mới nhất từ GitHub
 get_latest_rke2_version() {
     curl -s "https://api.github.com/repos/rancher/rke2/releases/latest" | \
     grep '"tag_name":' | \
     sed -E 's/.*"([^"]+)".*/\1/'
 }
 
-# Set the RKE2_VERSION dynamically
+# Lấy phiên bản RKE2 mới nhất
 RKE2_VERSION=$(get_latest_rke2_version)
 if [[ -z "$RKE2_VERSION" ]]; then
     echo "Failed to fetch the latest RKE2 version. Using default version: v1.30.6+rke2r1"
@@ -124,32 +122,24 @@ fi
 
 echo "Using RKE2 version: $RKE2_VERSION"
 
-# Prompt for the 'become' password (sudo access)
+# Yêu cầu mật khẩu sudo cho Ansible
 echo "Please enter the become password:"
 read -s BECOME_PASS
-
-# Set the ANSIBLE_BECOME_PASS environment variable for Ansible
 export ANSIBLE_BECOME_PASS=$BECOME_PASS
 
-# Deploy RKE2 based on the mode (normal or ha)
+# Triển khai RKE2 dựa trên chế độ (normal hoặc ha)
 if [[ $RKE2_MODE == "normal" && ${#MASTER_IPS[@]} -eq 1 && ${#WORKER_IPS[@]} -ge 1 ]]; then
     ansible-playbook -i hosts tasks/prepare_vm.yaml
-
-    # Normal mode: one master and one or more workers
     ansible-playbook -i hosts tasks/deploy_rke2.yaml \
         --extra-vars "rke2_cni=$RKE2_CNI rke2_version=$RKE2_VERSION rke2_token=$RKE2_TOKEN"
-
-    # Run the post_install.yaml playbook for additional setup on master nodes
     ansible-playbook -i hosts tasks/post_install.yaml --user=root
         
 elif [[ $RKE2_MODE == "ha" && ${#MASTER_IPS[@]} -gt 1 && ${#WORKER_IPS[@]} -ge 1 ]]; then
-    # HA mode: multiple masters and one or more workers
     if [[ -z $API_IP || -z $RKE2_LOADBALANCER_RANGE ]]; then
         echo "In HA mode, API_IP and RKE2_LOADBALANCER_RANGE must be set. Exiting."
         exit 1
     fi
 
-    # Set kubevip or keepalived based on user input
     if [[ "$USE_KUBEVIP" == "true" ]]; then
         HA_MODE_KUBEVIP=true
         HA_MODE_KEEPALIVED=false
@@ -158,16 +148,12 @@ elif [[ $RKE2_MODE == "ha" && ${#MASTER_IPS[@]} -gt 1 && ${#WORKER_IPS[@]} -ge 1
         HA_MODE_KEEPALIVED=true
     fi
 
-    # Run the Ansible playbooks for setup and deployment
     ansible-playbook -i hosts tasks/prepare_vm.yaml --extra-vars "api_ip=$API_IP"
     ansible-playbook -i hosts tasks/deploy_rke2_ha.yaml \
         --extra-vars "rke2_cni=$RKE2_CNI rke2_version=$RKE2_VERSION rke2_token=$RKE2_TOKEN rke2_api_ip=$API_IP rke2_loadbalancer_ip_range=range-global:$RKE2_LOADBALANCER_RANGE rke2_ha_mode_kubevip=$HA_MODE_KUBEVIP rke2_ha_mode_keepalived=$HA_MODE_KEEPALIVED"
-    
-    # Run the post_install.yaml playbook for additional setup on master nodes
     ansible-playbook -i hosts tasks/post_install.yaml --user=root
 
 else
     echo "Invalid configuration: Please check RKE2_MODE, MASTER_IPS, and WORKER_IPS."
     exit 1
 fi
-

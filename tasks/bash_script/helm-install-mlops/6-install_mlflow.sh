@@ -1,8 +1,8 @@
-#https://github.com/community-charts/helm-charts/blob/main/charts/mlflow/values.yaml
+# Thêm kho Helm của community-charts và cập nhật danh sách chart
 helm repo add community-charts https://community-charts.github.io/helm-charts
+helm repo update
 
-helm repo update 
-
+# Tạo cơ sở dữ liệu và người dùng PostgreSQL cho MLflow
 cat <<EOM 
 psql -h 10.43.178.165 -p 5432 -U postgres
 Password1234
@@ -17,29 +17,30 @@ GRANT ALL PRIVILEGES ON DATABASE mlflow_auth_db TO auth_user;
 \l
 EOM
 
+# Tạo Dockerfile để xây dựng hình ảnh MLflow với PostgreSQL và S3 hỗ trợ
 cat <<EOF > Dockerfile
 FROM ghcr.io/mlflow/mlflow:v2.19.0
 
-# Install system dependencies for PostgreSQL and S3 support, as well as Python dependencies
+# Cài đặt các phụ thuộc hệ thống và Python cần thiết cho PostgreSQL và S3
 RUN apt-get update -y && \\
     apt-get install -y --no-install-recommends \\
     python3-dev \\
     build-essential \\
     pkg-config && \\
     rm -rf /var/lib/apt/lists/* && \\
-    # Upgrade pip and install Python dependencies
+    # Nâng cấp pip và cài đặt các phụ thuộc Python
     pip install --upgrade pip && \\
     pip install psycopg2-binary boto3
 
-# Default command to start bash (or you can modify it to run MLflow server if needed)
+# Lệnh mặc định để bắt đầu bash
 CMD ["bash"]
-
 EOF
 
-# Build and push the Docker image to your private registry
+# Xây dựng và đẩy hình ảnh Docker của MLflow lên registry cá nhân
 docker build -t registry.mylab.com:5000/mlflow:v2 -f Dockerfile .
 docker push registry.mylab.com:5000/mlflow:v2
 
+# Tạo PersistentVolumeClaim cho MLflow
 cat <<EOF > pvc.yaml
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -54,37 +55,16 @@ spec:
       storage: 10Gi
   storageClassName: longhorn
 EOF
-
 kubectl apply -f pvc.yaml
 
-# # Image of mlflow
-# image:
-#   # -- The docker image repository to use
-#   repository: burakince/mlflow
-#   # -- The docker image pull policy
-#   pullPolicy: IfNotPresent
-#   # -- The docker image tag to use. Default app version
-#   tag: ""
-# image:
-#   # -- The docker image repository to use
-#   repository: registry.mylab.com:5000/mlflow
-#   # -- The docker image pull policy
-#   pullPolicy: Always
-#   # -- The docker image tag to use. Default app version
-#   tag: "v1"
-
-# extraFlags:
-#   - serveArtifacts
-
+# Cấu hình các thông số của MLflow, bao gồm hình ảnh Docker và kết nối đến PostgreSQL và S3
 cat <<EOF > values.yaml
 replicaCount: 1
 
-# Image of mlflow
+# Cấu hình hình ảnh Docker của MLflow
 image:
   repository: registry.mylab.com:5000/mlflow
-  # -- The docker image pull policy
   pullPolicy: Always
-  # -- The docker image tag to use. Default app version
   tag: "v2"
 
 service:
@@ -143,17 +123,20 @@ auth:
   postgres:
     enabled: true
     host: "10.43.178.165"
-    port: 5432 # required
+    port: 5432
     database: "mlflow_auth_db"
     user: "auth_user"
     password: "auth_password"
     driver: "psycopg2"
 EOF
 
+# Cài đặt hoặc nâng cấp MLflow trên Kubernetes
 helm upgrade --install mlflow community-charts/mlflow -f values.yaml --namespace mlops
 
-# https://appdev24.com/pages/63/setup-mlflow-on-kubernetes
+# Gỡ cài đặt MLflow nếu không cần thiết
 # helm uninstall mlflow --namespace mlops
+
+# Thiết lập môi trường Python và cài đặt các thư viện cần thiết cho MLflow
 python3 -m venv env
 source env/bin/activate
 
@@ -162,6 +145,7 @@ pip3 install mlflow
 pip3 install boto3
 pip3 install scikit-learn
 
+# Thiết lập các biến môi trường cho MLflow
 export MLFLOW_TRACKING_URI=http://mlflow.mylab.com:5000
 export MLFLOW_TRACKING_INSECURE_TLS=true
 export MLFLOW_S3_ENDPOINT_URL=https://minio.mylab.com:9000
@@ -170,11 +154,11 @@ export MLFLOW_ARTIFACTS_DESTINATION=s3://mlflow-artifacts
 export AWS_ACCESS_KEY_ID=CeGeT5fesfdHa4unYt2p
 export AWS_SECRET_ACCESS_KEY=ZxxHWqpOfy8SGzkzGbjMkG86tudAq9KAiPckB5gJ
 
-# git clone https://github.com/mlflow/mlflow
+# Chạy ví dụ MLflow để kiểm tra cài đặt
+git clone https://github.com/mlflow/mlflow
 python3 mlflow/examples/sklearn_elasticnet_wine/train.py
-
-# NOTE: review the links mentioned above for guidance on connecting to a managed tracking server, such as the free Databricks Community Edition
 
 # mlflow.set_tracking_uri(uri="http://mlflow.mylab.com:5000")
 
-# kubectl logs mlflow-67cf6d8c9-lk2h2 -n mlops -c mlflow
+# Kiểm tra logs của MLflow trên Kubernetes
+kubectl logs mlflow-67cf6d8c9-lk2h2 -n mlops -c mlflow
